@@ -1,4 +1,4 @@
-# Brewery Rating App - Simplified Version
+# Iclr Rating App - Simplified Version
 
 This is a simplified version of the brewery rating application with basic authentication and MongoDB data fetching.
 
