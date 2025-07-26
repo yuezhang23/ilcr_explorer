@@ -85,9 +85,6 @@ function AdminHome() {
     const [confirmationPrompt, setConfirmationPrompt] = useState<string>("");
     const [rebuttal, setRebuttal] = useState<boolean>(false); // New state for Rebuttal toggle
     
-    // Tooltip state for prediction hover
-    const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
-    const [tooltipPosition, setTooltipPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
     
     // New state for dropdown tooltip
     const [dropdownTooltipVisible, setDropdownTooltipVisible] = useState<boolean>(false);
@@ -278,19 +275,6 @@ function AdminHome() {
     // Add hover state for clickable Rating link
     const [ratingLinkHover, setRatingLinkHover] = useState(false);
 
-    // Tooltip handlers for prediction hover
-    const handlePredictionMouseEnter = (event: React.MouseEvent) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        setTooltipPosition({
-            x: rect.left + rect.width / 2,
-            y: rect.top - 10
-        });
-        setTooltipVisible(true);
-    };
-
-    const handlePredictionMouseLeave = () => {
-        setTooltipVisible(false);
-    };
 
     // Tooltip handlers for dropdown options
     const handleDropdownOptionMouseEnter = (event: React.MouseEvent, prompt: string) => {
@@ -655,8 +639,8 @@ function AdminHome() {
                                                     onClick={() => {
                                                         setOpenModalPaper(br);
                                                     }}
-                                                    onMouseEnter={handlePredictionMouseEnter}
-                                                    onMouseLeave={handlePredictionMouseLeave}>
+                                                    onMouseEnter={(e) => handleDropdownOptionMouseEnter(e, currentPrompt)}
+                                                    onMouseLeave={handleDropdownOptionMouseLeave}>
                                                     {buttonText}
                                                 </button>
                                             );
@@ -824,31 +808,6 @@ function AdminHome() {
                     style={{
                         ...adminStyles.tooltip.arrow,
                         ...adminStyles.tooltip.arrowRight
-                    }}
-                />
-            </div>
-        )}
-
-        {/* Tooltip for prediction hover */}
-        {tooltipVisible && (
-            <div 
-                style={{
-                    ...adminStyles.tooltip.prediction,
-                    left: tooltipPosition.x,
-                    top: tooltipPosition.y,
-                    transform: 'translateX(-50%) translateY(-100%)'
-                }}
-            >
-                <div style={adminStyles.tooltip.title}>
-                    Current Prompt:
-                </div>
-                <div style={adminStyles.tooltip.content}>
-                    {currentPrompt}
-                </div>
-                <div 
-                    style={{
-                        ...adminStyles.tooltip.arrow,
-                        ...adminStyles.tooltip.arrowDown
                     }}
                 />
             </div>

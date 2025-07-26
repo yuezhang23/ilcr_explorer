@@ -513,6 +513,7 @@ export const adminStyles = {
       padding: '12px 16px',
       borderRadius: '8px',
       fontSize: '14px',
+      minWidth: '300px',
       maxWidth: '400px',
       zIndex: 1000,
       boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
