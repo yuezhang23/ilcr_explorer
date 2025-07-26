@@ -49,16 +49,9 @@ export const getOnePredictionByPaperId = (paperId) => {
     return model.findOne({ paper_id: paperId });
 };
 
-
-export const getPredictionsByPaperIdsAndPrompt = async (paperIds, prompt) => {
-    const predictions = [];
-    for (const paperId of paperIds) {
-        const prediction = await model.findOne({ paper_id: paperId, prompt: prompt });
-        if (!prediction) {
-            predictions.push({ paper_id: paperId, prompt: prompt, prediction: "O" });
-        } else {
-            predictions.push({ paper_id: paperId, prompt: prompt, prediction: prediction.prediction });
-        }
-    }
-    return predictions;
+export const getPredByPaperIdsAndPromptAndRebuttal = (paper_id, prompt, rebuttal) => {
+    return model.findOne({ paper_id: paper_id, prompt: prompt, rebuttal: rebuttal });
 };
+
+
+

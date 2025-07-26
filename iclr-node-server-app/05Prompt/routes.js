@@ -36,9 +36,33 @@ export default function prompt(app) {
 
     const getPredictionsByPaperIdsAndPrompt = async (req, res) => {
         const { paper_ids, prompt } = req.body;
-        const predictions = await dao.getPredictionsByPaperIdsAndPrompt(paper_ids, prompt);
+        const predictions = [];
+        for (const paperId of paper_ids) {
+            const prediction = await dao.getPredictionByPaperIdAndPrompt(paperId, prompt );
+            if (!prediction) {
+                predictions.push({ paper_id: paperId, prompt: prompt, prediction: "O" });
+            } else {
+                predictions.push({ paper_id: paperId, prompt: prompt, prediction: prediction.prediction });
+            }
+        }
         res.json(predictions);
     };
+
+    const getPredsByPaperIdsAndPromptAndRebuttal = async (req, res) => {
+        const { paper_ids, prompt, rebuttal } = req.body;
+        const predictions = [];
+        for (const paperId of paper_ids) {
+            const prediction = await dao.getPredByPaperIdsAndPromptAndRebuttal(paperId, prompt, rebuttal);
+            if (!prediction) {
+                predictions.push({ paper_id: paperId, prompt: prompt, rebuttal: rebuttal, prediction: "O" });
+            } else {
+                predictions.push({ paper_id: paperId, prompt: prompt, rebuttal: rebuttal, prediction: prediction.prediction });
+            }
+        }
+        res.json(predictions);
+    };
+
+
     
 
     // const getAllPromptTemplates = async (req, res) => {
@@ -72,4 +96,5 @@ export default function prompt(app) {
     app.post("/api/prompt/all_predictions_by_prompt", getAllPredictionsByPrompt);
     app.post("/api/prompt/all_predictions_by_latest_prompt", getAllPredictionsByLatestPrompt);
     app.post("/api/prompt/predictions_by_paper_ids_and_prompt", getPredictionsByPaperIdsAndPrompt);
+    app.post("/api/prompt/predictions_by_paper_ids_and_prompt_and_rebuttal", getPredsByPaperIdsAndPromptAndRebuttal);
 }

@@ -39,7 +39,7 @@ const candidates = [
 ] 
 
 // Name of the JSONL file to import
-const JSONL_FILE = './data/result_rebut.jsonl';
+const JSONL_FILE = './data/result_no_rebut.jsonl';
 
 // Connect to MongoDB
 async function main() {
@@ -73,16 +73,19 @@ async function main() {
                 let count = 0;
                 let batch = [];
                 let batchNumber = 0;
-                const RESUME_FROM_RECORD = 7601; // Resume from this record number
+                const RESUME_FROM_RECORD = 0; // Resume from this record number
                 let currentRecord = 0;
 
                 for await (const line of rl) {
                     currentRecord++;
                     
                     // Skip records until we reach the resume point
-                    if (currentRecord < RESUME_FROM_RECORD) {
-                        console.log(`Skipping record ${currentRecord} (resuming from ${RESUME_FROM_RECORD})`);
-                        continue;
+                    // if (currentRecord < RESUME_FROM_RECORD) {
+                    //     console.log(`Skipping record ${currentRecord} (resuming from ${RESUME_FROM_RECORD})`);
+                    //     continue;
+                    // }
+                    if (currentRecord >= 7601) {
+                        break;
                     }
                     
                     if (!line.trim()) continue;

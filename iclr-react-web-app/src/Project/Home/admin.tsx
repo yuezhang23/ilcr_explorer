@@ -84,6 +84,7 @@ function AdminHome() {
     const [showConfirmationModal, setShowConfirmationModal] = useState<boolean>(false);
     const [confirmationPrompt, setConfirmationPrompt] = useState<string>("");
     const [rebuttal, setRebuttal] = useState<boolean>(false); // New state for Rebuttal toggle
+    const [pub_rebuttal, setPubRebuttal] = useState<number>(0);
     
     
     // New state for dropdown tooltip
@@ -151,8 +152,7 @@ function AdminHome() {
             const fetchPredictionsForCurrentPrompt = async () => {
                 try {
                     const paperIds = bib.map((p: any) => p._id);
-                    const newPredictions = await home.getPredictionsByPaperIdsAndPrompt(paperIds, currentPrompt);
-                    console.log("newPredictions[0].prediction", newPredictions[0].prediction);
+                    const newPredictions = await home.getPredsByPaperIdsAndPromptAndRebuttal(paperIds, currentPrompt, pub_rebuttal);
                     
                     // Update Redux state with new predictions
                     const preds = currentPreds || [];
@@ -167,7 +167,7 @@ function AdminHome() {
             };
             fetchPredictionsForCurrentPrompt();
         }
-    }, [currentPrompt, bib, dispatch, currentPreds]);
+    }, [currentPrompt, bib, dispatch, currentPreds, pub_rebuttal]);
 
     // Remove the old "fetch all predictions on mount" logic
     useEffect(() => {
@@ -466,6 +466,21 @@ function AdminHome() {
                                     </div>
                                 )}
                             </div>
+                            <div className="d-flex flex-column align-items-center">
+                                <div className="form-check form-switch">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="rebuttalSwitch"
+                                        checked={pub_rebuttal === 1}
+                                        onChange={() => setPubRebuttal(pub_rebuttal === 1 ? 1 : 0)}
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                    <label className="form-check-label" htmlFor="rebuttalSwitch" style={{ fontSize: '0.8rem' }}>
+                                        Rebuttal
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -694,8 +709,8 @@ function AdminHome() {
                             className="btn btn-primary px-4 py-2" 
                             onClick={() => {
                                 if (openModalPaper) {    
-                                    setUserPrompt(userPrompt !== "" ? userPrompt : home.BASIC_PROMPT);
-                                    setConfirmationPrompt(util.prompt_tmp.replace("{{ task }}", userPrompt !== "" ? userPrompt : home.BASIC_PROMPT));
+                                    setUserPrompt(userPrompt !== "" ? userPrompt : currentPrompt);
+                                    setConfirmationPrompt(util.prompt_tmp.replace("{{ task }}", userPrompt !== "" ? userPrompt : currentPrompt));
                                     setShowConfirmationModal(true);
                                 }
                             }}

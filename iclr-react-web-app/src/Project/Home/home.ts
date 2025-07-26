@@ -239,6 +239,11 @@ export const getPredictionsByPaperIdsAndPrompt = async (paperIds: string[], prom
     return response.data;
 };
 
+// Get predictions by paper ids and prompt and rebuttal
+export const getPredsByPaperIdsAndPromptAndRebuttal = async (paperIds: string[], prompt: string, rebuttal: number) => {
+    const response = await axios.post(`${PROMPT_API}/predictions_by_paper_ids_and_prompt_and_rebuttal`, { paper_ids: paperIds, prompt: prompt, rebuttal: rebuttal });
+    return response.data;
+};
 
 
 
