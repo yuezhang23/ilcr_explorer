@@ -71,4 +71,65 @@
     flex-direction: column;
     gap: 10px;
   }
+}
+
+/* Dropdown menu overrides - Increased specificity to override Bootstrap */
+.dropdown-menu.show,
+div.dropdown-menu.show,
+.dropdown .dropdown-menu.show {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+  border: 1px solid #e6e1de !important;
+  padding: 8px 0 !important;
+  width: 120px !important; /* Adjust this value to your desired width */
+  min-width: 120px !important; /* Override Bootstrap's min-width */
+  max-width: 150px !important; /* Override Bootstrap's max-width */
+}
+
+.dropdown-item {
+  border-radius: 0 !important;
+  margin: 0 4px !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+}
+
+.dropdown-item:first-child {
+  margin-top: 4px !important;
+}
+
+.dropdown-item:last-child {
+  margin-bottom: 4px !important;
+}
+
+/* Consistent spacing utilities */
+.gap-4 {
+  gap: 1.5rem !important;
+}
+
+.gap-5 {
+  gap: 3rem !important;
+}
+
+/* Card spacing consistency */
+.card-body {
+  padding: 1.5rem !important;
+}
+
+.card-header {
+  padding: 1rem 1.5rem !important;
+}
+
+/* Form control spacing */
+.form-label {
+  margin-bottom: 0.5rem !important;
+}
+
+.form-check {
+  margin-bottom: 0.5rem !important;
+}
+
+/* Loading spinner spacing */
+.spinner-border-sm {
+  margin-right: 0.5rem !important;
 } 

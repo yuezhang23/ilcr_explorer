@@ -5,7 +5,7 @@ import axios from "axios";
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 // import UsrHome from './user';
 // import GuestHome from './guest';
-import RatingHome from './rating';
+import RatingHome from './rating'
 import AdminHome from './admin';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -99,7 +99,7 @@ function Home() {
               {/* <Route path="User" element={<GuestHome/>} /> */}
               {/* <Route path="User/:usrId" element={<UsrHome/>} /> */}
               <Route path="Guest/*" element={<AdminHome/>} />
-              <Route path="Guest/Rating/*" element={<RatingHome/>} />
+              <Route path="Analytics/*" element={<RatingHome/>} />
           </Routes>
       </div>
     </div>

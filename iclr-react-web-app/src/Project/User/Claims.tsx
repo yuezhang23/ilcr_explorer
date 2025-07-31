@@ -5,6 +5,7 @@ import * as userClient from "./client";
 import axios from "axios";
 import { Claim } from "../Details/DetailBrewery/OwnClaim/claimClient";
 import { BsFillCheckCircleFill, BsTrash3Fill } from "react-icons/bs";
+import React from "react";
 axios.defaults.withCredentials = true;
 
 export default function Claims() {
@@ -111,8 +112,11 @@ export default function Claims() {
               <td> Pending </td>
               <td> Pending </td>
               <td>            
-                <BsFillCheckCircleFill type="button"
-                  onClick={updateClaim} className="me-2 text-success fs-2"/>
+                <BsFillCheckCircleFill 
+                  type="button"
+                  onClick={updateClaim} 
+                  className="me-2 text-success fs-2"
+                />
                 <button className="btn bg-danger-subtle me-2" onClick={() => deleteClaim(cur)}>
                   <BsTrash3Fill className="mb-1"/>
                 </button>

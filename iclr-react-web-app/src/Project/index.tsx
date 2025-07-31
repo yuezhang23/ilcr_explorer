@@ -10,8 +10,7 @@ import Signin from './User/Signin';
 import Signup from './User/Signup';
 import Profile from './User/Profile';
 import Claims from './User/Claims';
-import UserTable from './User/Table';
-import Reviews from './User/Reviews';
+// import Reviews from './User/Reviews';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 export default function Project() {
@@ -31,9 +30,8 @@ export default function Project() {
                   <Profile />
                 </ProtectedRoute>
               } />
-              <Route path="User/Owner/:ownerId/Claims" element={<Claims />} />
-              <Route path="User/Admin/Users" element={<UserTable />} />
-              <Route path="User/Admin/Review" element={<Reviews />} />
+              {/* <Route path="User/Owner/:ownerId/Claims" element={<Claims />} /> */}
+              {/* <Route path="User/Admin/Review" element={<Reviews />} /> */}
           </Routes>
         </div>
       </AuthProvider>

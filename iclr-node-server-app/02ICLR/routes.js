@@ -1,12 +1,39 @@
 import axios from "axios";
 import * as dao from "./dao.js";
 import * as promptDao from "../05Prompt/dao.js"
+import { setCurrentYear, getCurrentYear, getAvailableYears } from "../config/globalConfig.js";
 axios.defaults.withCredentials = true;
 import { toString_rebuttal, toString_no_rebuttal, parse_sectioned_prompt} from "./utility.js";
 import UserRoutes from "../04Users/routes.js";
 import { Liquid } from 'liquidjs';
 
 export default function iclr(app) {
+    // Year management endpoints
+    const setYear = async (req, res) => {
+        try {
+            const { year } = req.body;
+            const success = setCurrentYear(year.toString());
+            if (success) {
+                res.json({ success: true, currentYear: getCurrentYear() });
+            } else {
+                res.status(400).json({ error: "Invalid year. Must be one of: 2024, 2025, 2026" });
+            }
+        } catch (error) {
+            res.status(500).send({ error: "Failed to set year" });
+        }
+    };
+
+    const getYear = async (req, res) => {
+        try {
+            res.json({ 
+                currentYear: getCurrentYear(),
+                availableYears: getAvailableYears()
+            });
+        } catch (error) {
+            res.status(500).send({ error: "Failed to get year configuration" });
+        }
+    };
+
     const getAllIclr = async (req, res) => {
         try {
             const response = await dao.getAllSubmissions();
@@ -15,15 +42,16 @@ export default function iclr(app) {
             res.status(500).send({ error: "Failed to retrieve all ICLR submissions" });
         }
     }
-
-    const getAllIclrWithoutMetareviews = async (req, res) => {
+    
+    const getAllIclrWithPartialMetareviews = async (req, res) => {
         try {
-            console.log("getAllIclrWithoutMetareviews");
-            const response = await dao.getAllSubmissionsWithoutMetareviews();
+            console.log("getAllIclrWithPartialMetareviews");
+            // This function now returns submissions with metareviews containing only confidence and rating fields
+            const response = await dao.getAllSubmissionsWithPartialMetareviews();
             res.json({ data: response, name: dao.collection_name });
         } catch (error) {
             console.error("Error in getAllIclrWithoutMetareviews:", error);
-            res.status(500).send({ error: "Failed to retrieve ICLR submissions without metareviews" });
+            res.status(500).send({ error: "Failed to retrieve ICLR submissions with simplified metareviews" });
         }
     }
 
@@ -103,14 +131,8 @@ export default function iclr(app) {
         }
     };
 
-    const findSubmissionByYear = async (req, res) => {
-        const newSubmissions = await dao.findSubmissionByYear(req.params.year);
-        if (newSubmissions) {
-            res.json(newSubmissions);
-        } else {
-            res.status(400);  
-        }
-    };
+    // Note: findSubmissionByYear function removed as it conflicts with year management endpoint
+    // Use the global year setting instead of passing year as parameter
 
     const getMetaValuesByUrl = async (req, res) => {
         const submission = await dao.findSubmissionByUrl(req.params.url);
@@ -136,7 +158,7 @@ export default function iclr(app) {
             const limit = parseInt(req.query.limit) || 20;
             const skip = parseInt(req.query.skip) || 0;
             const searchTerm = req.query.search || '';
-            
+
             let submissions, totalCount;
             
             if (searchTerm && searchTerm != '') {
@@ -206,8 +228,12 @@ export default function iclr(app) {
         }
     }
     
+// Year management routes
+app.post("/api/iclr/year", setYear);
+app.get("/api/iclr/year", getYear);
+
 app.get("/api/iclr", getAllIclr);
-app.get("/api/iclr/without_metareviews", getAllIclrWithoutMetareviews);
+app.get("/api/iclr/with_partial_metareviews", getAllIclrWithPartialMetareviews);
 app.get("/api/iclr/random", getRandomSubmissions);
 app.get("/api/admin/iclr/random/:num", getRandomSubmissionsbyAdmin);
 app.post("/api/iclr/prompt/url", promptSubmissionByUrl);
@@ -217,7 +243,7 @@ app.get("/api/iclr/title/:title", findSubmissionsByTitle);
 app.get("/api/iclr/abstract/:abstract", findSubmissionsByAbstract);
 app.get("/api/iclr/author/:author", findSubmissionsByAuthor);
 app.get("/api/iclr/decision/:decision", findSubmissionsByDecision);
-app.get("/api/iclr/year/:year", findSubmissionByYear);
+// Removed conflicting route - use global year setting instead
 app.get("/api/iclr/random/:num", getRandomSubmissions);
 app.get("/api/iclr/many", createSubmissions);
 app.get("/api/iclr/meta/:url", getMetaValuesByUrl);

@@ -348,6 +348,17 @@ export const adminStyles = {
     }
   },
 
+  // Loading state styles
+  loadingState: {
+    container: {
+      color: '#6b7280',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      gap: '1rem'
+    }
+  },
+
   // Modal styles
   modal: {
     overlay: {
@@ -435,60 +446,128 @@ export const adminStyles = {
 
   // Clickable link style for table headers  
   clickableLink: {
-    border: '1.5px solid rgb(22, 40, 204)', // subtle indigo border
+    border: '4px solid rgb(22, 40, 204)', // subtle indigo border
     borderRadius: '8px',
-    padding: '2px 16px',
-    color: 'rgb(218, 33, 33)',
-    backgroundColor: 'rgba(242, 193, 30, 0.06)',
+    padding: '2px 12px',
+    color: 'rgb(239, 237, 243)',
+    backgroundColor: 'rgb(114, 208, 116)', // soft indigo background
     fontWeight: 600,
     cursor: 'pointer',
     transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
     textDecoration: 'none',
-    boxShadow: '0 1px 2px rgba(99,102,241,0.04)',
+    boxShadow: '0 2px 4px rgba(227, 232, 76, 0.04)',
     display: 'inline-block',
   },
   clickableLinkHover: {
-    background: 'rgba(99,102,241,0.13)',
+    background: 'rgba(210, 175, 116, 0.13)',
     borderColor: '#4f46e5',
     color: '#4f46e5',
     textDecoration: 'none',
   },
 
-  // Dropdown styles
+  // Enhanced Dropdown styles (common between admin.tsx and rating.tsx)
   dropdown: {
     button: {
-      fontSize: '0.75rem',
-      padding: '4px 8px',
+      fontSize: '0.9rem',
+      padding: '8px 12px',
       border: '1px solid #dee2e6',
-      borderRadius: '4px',
+      borderRadius: '8px',
       backgroundColor: '#fff',
-      minWidth: '80px'
+      minWidth: '80px',
+      fontWeight: '500',
+      transition: 'all 0.3s ease',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
+    buttonDisabled: {
+      fontSize: '0.9rem',
+      padding: '8px 12px',
+      border: '1px solid #dee2e6',
+      borderRadius: '8px',
+      backgroundColor: '#f8f9fa',
+      minWidth: '80px',
+      fontWeight: '500',
+      transition: 'all 0.3s ease',
+      cursor: 'not-allowed',
+      opacity: 0.6,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between'
     },
     menu: {
       top: '100%',
       left: '0',
       zIndex: 1000,
-      minWidth: '200px',
-      maxWidth: '300px',
+      minWidth: '150px',
+      maxWidth: '150px',
+      width: '150px',
       backgroundColor: '#fff',
       border: '1px solid #dee2e6',
-      borderRadius: '4px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      padding: '4px 0'
+      borderRadius: '12px',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+      padding: '8px 0',
+      overflow: 'hidden',
+      position: 'absolute' as const,
+      marginTop: '4px'
+    },
+    menuExpanded: {
+      top: '100%',
+      left: '0',
+      zIndex: 9999,
+      minWidth: '150px',
+      maxWidth: '150px',
+      width: '150px',
+      backgroundColor: '#fff',
+      border: '1px solid #212529',
+      borderRadius: '12px',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+      padding: '8px 0',
+      overflow: 'visible',
+      position: 'absolute' as const,
+      marginTop: '4px',
+      display: 'block',
+      maxHeight: 'none',
+      height: 'auto'
     },
     item: {
-      fontSize: '0.75rem',
-      padding: '6px 12px',
+      fontSize: '0.9rem',
+      fontWeight: '500',
+      padding: '8px 16px',
       border: 'none',
       backgroundColor: 'transparent',
       cursor: 'pointer',
       textAlign: 'left' as const,
       whiteSpace: 'normal' as const,
-      wordWrap: 'break-word' as const
+      wordWrap: 'break-word' as const,
+      transition: 'all 0.2s ease',
+      width: '100%'
+    },
+    itemActive: {
+      backgroundColor: 'transparent',
+      fontSize: '0.9rem',
+      fontWeight: '600',
+      padding: '8px 16px',
+      border: 'none',
+      color: '#6b7280',
+      cursor: 'pointer',
+      textAlign: 'left' as const,
+      whiteSpace: 'normal' as const,
+      wordWrap: 'break-word' as const,
+      transition: 'all 0.2s ease',
+      width: '100%'
+    },
+    itemHover: {
+      backgroundColor: '#f8f9fa'
+    },
+    container: {
+      position: 'relative' as const,
+      width: '100%'
     }
   },
 
-  // Tooltip styles
+  // Enhanced Tooltip styles (common between admin.tsx and rating.tsx)
   tooltip: {
     dropdown: {
       position: 'fixed' as const,
@@ -542,6 +621,14 @@ export const adminStyles = {
       borderBottom: '6px solid transparent',
       borderLeft: '6px solid #333'
     },
+    arrowLeft: {
+      top: '50%',
+      left: '-6px',
+      transform: 'translateY(-50%)',
+      borderTop: '6px solid transparent',
+      borderBottom: '6px solid transparent',
+      borderRight: '6px solid #333'
+    },
     arrowDown: {
       top: '100%',
       left: '50%',
@@ -549,6 +636,69 @@ export const adminStyles = {
       borderLeft: '6px solid transparent',
       borderRight: '6px solid transparent',
       borderTop: '6px solid #333'
+    }
+  },
+
+  // Form control styles (common between admin.tsx and rating.tsx)
+  form: {
+    label: {
+      fontSize: '0.9rem',
+      fontWeight: '600',
+      marginBottom: '0.5rem',
+      color: '#374151'
+    },
+    select: {
+      fontSize: '0.9rem',
+      border: '1px solid #d1d5db',
+      borderRadius: '6px',
+      padding: '6px 12px',
+      backgroundColor: '#fff',
+      transition: 'all 0.2s ease'
+    },
+    switch: {
+      cursor: 'pointer'
+    },
+    switchLabel: {
+      fontSize: '0.9rem',
+      fontWeight: '600',
+      color: '#374151'
+    }
+  },
+
+  // Layout styles (common between admin.tsx and rating.tsx)
+  layout: {
+    sidebar: {
+      overflow: 'visible',
+      width: '300px',
+      minHeight: 'fit-content'
+    },
+    mainContent: {
+      flexGrow: 1
+    },
+    flexContainer: {
+      display: 'flex',
+      gap: '1rem',
+      margin: '0.5rem'
+    },
+    cardSpacing: {
+      marginBottom: '1rem'
+    }
+  },
+
+  // Loading spinner styles (common between admin.tsx and rating.tsx)
+  spinner: {
+    container: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '400px'
+    },
+    content: {
+      textAlign: 'center' as const
+    },
+    text: {
+      marginTop: '0.75rem',
+      color: '#6b7280'
     }
   },
 
@@ -609,4 +759,26 @@ export const getRowBackground = (index: number, isExpanded: boolean) => {
 
 export const getPaginationButtonStyle = (isDisabled: boolean) => {
   return isDisabled ? adminStyles.pagination.buttonDisabled : adminStyles.pagination.button;
+};
+
+// New helper functions for common patterns
+export const getDropdownButtonStyle = (isLoading: boolean) => {
+  return isLoading ? adminStyles.dropdown.buttonDisabled : adminStyles.dropdown.button;
+};
+
+export const getDropdownMenuStyle = (isExpanded: boolean) => {
+  return isExpanded ? adminStyles.dropdown.menuExpanded : adminStyles.dropdown.menu;
+};
+
+export const getTooltipArrowStyle = (position: 'left' | 'right' | 'down') => {
+  switch (position) {
+    case 'left':
+      return adminStyles.tooltip.arrowLeft;
+    case 'right':
+      return adminStyles.tooltip.arrowRight;
+    case 'down':
+      return adminStyles.tooltip.arrowDown;
+    default:
+      return adminStyles.tooltip.arrowRight;
+  }
 }; 

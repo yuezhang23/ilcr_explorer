@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 
 // const Templates = mongoose.model('templates', templatesSchema);
-const model = mongoose.model('predictions', predictionSchema, 'predictions', { collection: 'iclr_2024' });
+const model = mongoose.model('predictions', predictionSchema, 'predictions');
 
 
 export const getPredictionByPaperIdAndPrompt = (paperId, prompt) => {
@@ -51,6 +51,19 @@ export const getOnePredictionByPaperId = (paperId) => {
 
 export const getPredByPaperIdsAndPromptAndRebuttal = (paper_id, prompt, rebuttal) => {
     return model.findOne({ paper_id: paper_id, prompt: prompt, rebuttal: rebuttal });
+};
+
+
+export const getPredsByPromptAndRebuttal = (prompt, rebuttal) => {
+    return model.find({ prompt: prompt, rebuttal: rebuttal });
+};
+
+export const getPredsByPaperIdsAndPromptAndRebuttalBatch = (paper_ids, prompt, rebuttal) => {
+    return model.find({ 
+        paper_id: { $in: paper_ids }, 
+        prompt: prompt, 
+        rebuttal: rebuttal 
+    });
 };
 
 

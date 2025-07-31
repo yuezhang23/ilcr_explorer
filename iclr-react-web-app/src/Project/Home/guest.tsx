@@ -10,6 +10,8 @@
 // import { Link, useNavigate } from 'react-router-dom';
 // axios.defaults.withCredentials = true;
 
+export {};
+
 
 // function GuestHome() {
 //   const {currentUser} = useSelector((state: ProjectState) => state.userReducer)

@@ -73,20 +73,16 @@ async function main() {
                 let count = 0;
                 let batch = [];
                 let batchNumber = 0;
-                const RESUME_FROM_RECORD = 0; // Resume from this record number
+                // const RESUME_FROM_RECORD = 46160; 
                 let currentRecord = 0;
 
                 for await (const line of rl) {
-                    currentRecord++;
-                    
+                    currentRecord++;                
                     // Skip records until we reach the resume point
                     // if (currentRecord < RESUME_FROM_RECORD) {
                     //     console.log(`Skipping record ${currentRecord} (resuming from ${RESUME_FROM_RECORD})`);
                     //     continue;
                     // }
-                    if (currentRecord >= 7601) {
-                        break;
-                    }
                     
                     if (!line.trim()) continue;
                     let record;
@@ -96,7 +92,9 @@ async function main() {
                         console.error('Invalid JSON:', line);
                         continue;
                     }
-                    const { prompt, rebuttal, s_id, prediction } = record;
+                    const { prompt, rebuttal, s_id } = record;
+                    // Handle the typo in the JSON field name: "prediciton" instead of "prediction"
+                    const prediction = record.prediciton || record.prediction;
 
                     if (prompt == null || s_id == null) {
                         console.error('Missing prompt or s_id:', record);
@@ -106,7 +104,7 @@ async function main() {
                     // Find paper in iclr_2024 with timeout handling
                     let paper;
                     try {
-                        paper = await ICLR2024.findOne({ s_id }).maxTimeMS(10000); // 10 second timeout
+                        paper = await ICLR2024.findOne({ s_id });
                         if (!paper) {
                             console.error(`No iclr_2024 paper found for s_id: ${s_id}`);
                             continue;
@@ -124,22 +122,23 @@ async function main() {
                         prompt: candidates[prompt],
                         paper_id,
                         paper_title,
+                        model: 'gpt-4o-mini', // Explicitly set the model
                         rebuttal,
-                        prediction : !prediction ? record.prediciton : prediction,
+                        prediction: prediction, // Use the corrected prediction value
                     };
 
                     console.log(`Processing record ${currentRecord}:`, doc);
-                    
                     batch.push(doc);
                     count++;
 
                     // When batch is full, insert it
                     if (batch.length >= BATCH_SIZE) {
                         try {
-                            const result = await Prediction.insertMany(batch).maxTimeMS(30000); // 30 second timeout
+                            const result = await Prediction.insertMany(batch);
                             batchNumber++;
                             console.log(`Imported batch ${batchNumber}: ${result.length} records (Total: ${count} records, Current record: ${currentRecord})`);
-                            batch = []; // Reset batch
+                            // Reset batch
+                            batch = []; 
                             
                             // Add a small delay between batches to prevent overwhelming the database
                             await new Promise(resolve => setTimeout(resolve, 100));
@@ -154,7 +153,7 @@ async function main() {
                 // Insert remaining records in the last batch
                 if (batch.length > 0) {
                     try {
-                        const result = await Prediction.insertMany(batch).maxTimeMS(30000); // 30 second timeout
+                        const result = await Prediction.insertMany(batch);
                         batchNumber++;
                         console.log(`Imported final batch ${batchNumber}: ${result.length} records (Total: ${count} records, Final record: ${currentRecord})`);
                     } catch (err) {
@@ -162,15 +161,19 @@ async function main() {
                     }
                 }
 
-                console.log(`Import completed. Total records processed: ${count} (from record ${RESUME_FROM_RECORD} to ${currentRecord})`);
+                console.log(`Import completed. Total records processed: ${count} (from record 1 to ${currentRecord})`);
                 
-            } catch (err) {
-                console.error('Error during import process:', err.message);
-            } finally {
                 // Ensure proper cleanup
                 await mongoose.disconnect();
                 console.log('MongoDB connection closed');
                 process.exit(0);
+                
+            } catch (err) {
+                console.error('Error during import process:', err.message);
+                // Ensure proper cleanup even on error
+                await mongoose.disconnect();
+                console.log('MongoDB connection closed');
+                process.exit(1);
             }
         }); 
     } catch (err) {

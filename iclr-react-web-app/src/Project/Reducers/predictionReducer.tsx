@@ -16,9 +16,9 @@ const predictionSlice = createSlice({
             const { paper_id, prompt, prediction} = action.payload;
             const index = state.currentPreds.findIndex(pred => pred.paper_id === paper_id);
             if (index !== -1) {
-                state.currentPreds[index] = {paper_id: paper_id, prompt: prompt, prediction: prediction};
+                state.currentPreds[index] = {paper_id: paper_id, prompt: prompt, prediction: prediction.toLowerCase() === 'yes' ? "Accept" : "Reject"};
             } else {
-                state.currentPreds.push({paper_id: paper_id, prompt: prompt, prediction: prediction});
+                state.currentPreds.push({paper_id: paper_id, prompt: prompt, prediction: prediction.toLowerCase() === 'yes' ? "Accept" : "Reject"});
             }
         },
     },

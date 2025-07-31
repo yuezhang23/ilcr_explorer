@@ -50,15 +50,35 @@ export default function prompt(app) {
 
     const getPredsByPaperIdsAndPromptAndRebuttal = async (req, res) => {
         const { paper_ids, prompt, rebuttal } = req.body;
-        const predictions = [];
-        for (const paperId of paper_ids) {
-            const prediction = await dao.getPredByPaperIdsAndPromptAndRebuttal(paperId, prompt, rebuttal);
-            if (!prediction) {
-                predictions.push({ paper_id: paperId, prompt: prompt, rebuttal: rebuttal, prediction: "O" });
-            } else {
-                predictions.push({ paper_id: paperId, prompt: prompt, rebuttal: rebuttal, prediction: prediction.prediction });
-            }
+        try {
+            // Use optimized batch query
+            const foundPredictions = await dao.getPredsByPaperIdsAndPromptAndRebuttalBatch(paper_ids, prompt, rebuttal);
+            
+            // Create a map of found predictions for quick lookup
+            const predictionMap = new Map();
+            foundPredictions.forEach(pred => {
+                predictionMap.set(pred.paper_id.toString(), pred.prediction);
+            });
+            
+            // Build response with all paper IDs, using "O" for missing predictions
+            const predictions = paper_ids.map(paperId => ({
+                paper_id: paperId,
+                prompt: prompt,
+                rebuttal: rebuttal,
+                prediction: predictionMap.get(paperId.toString()) || "O"
+            }));
+            
+            res.json(predictions);
+        } catch (error) {
+            console.error('Error fetching predictions:', error);
+            res.status(500).json({ error: 'Failed to fetch predictions' });
         }
+    };
+
+    const getPredsByPromptAndRebuttal = async (req, res) => {
+        const { prompt, rebuttal } = req.body;
+        const predictions = await dao.getPredsByPromptAndRebuttal(prompt, rebuttal);
+        console.log(predictions.length);
         res.json(predictions);
     };
 
@@ -97,4 +117,5 @@ export default function prompt(app) {
     app.post("/api/prompt/all_predictions_by_latest_prompt", getAllPredictionsByLatestPrompt);
     app.post("/api/prompt/predictions_by_paper_ids_and_prompt", getPredictionsByPaperIdsAndPrompt);
     app.post("/api/prompt/predictions_by_paper_ids_and_prompt_and_rebuttal", getPredsByPaperIdsAndPromptAndRebuttal);
+    app.post("/api/prompt/predictions_by_prompt_and_rebuttal", getPredsByPromptAndRebuttal);
 }

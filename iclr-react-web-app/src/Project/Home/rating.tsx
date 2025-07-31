@@ -1,28 +1,26 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ProjectState } from '../store';
 import * as home from './home';
-import * as util from './utility';
 import axios from "axios";
-import { FaDeleteLeft, FaChevronDown, FaChevronUp, FaEye, FaEyeSlash, FaCheck, FaN, FaX, FaO, FaStar } from 'react-icons/fa6';
 import { setIclr, setIclrName } from '../Reducers/iclrReducer';
-import { updatePrediction, setCurrentPreds } from '../Reducers/predictionReducer';
+import { setCurrentPreds } from '../Reducers/predictionReducer';
+import { useYear } from '../../contexts/YearContext';
 import { 
     adminStyles, 
-    getRatingColor, 
-    getConfidenceColor, 
-    getDecisionColors, 
-    getPredictionColors, 
-    getIndividualRatingColor, 
-    getRowBackground, 
-    getPaginationButtonStyle 
+    getDropdownButtonStyle, 
+    getDropdownMenuStyle, 
+    getTooltipArrowStyle 
 } from './styles/adminStyles';
 import './styles/admin.css';
+import RatingDistributionChart from './components/RatingDistributionChart';
+import YearSelector from '../../components/YearSelector';
 axios.defaults.withCredentials = true;
 
 // Helper function to process papers data
 function processPapersData(data: any[]) {
+    // console.log(data[0]);
     return data.map((m: any) => {
         const {metareviews, ...bib} = m;
         const ratings = [];
@@ -57,695 +55,335 @@ function processPapersData(data: any[]) {
 }
 
 function RatingHome() {
-    const {currentIclr, currentIclrName} = useSelector((state: ProjectState) => state.iclrReducer)
+    const {currentIclrName} = useSelector((state: ProjectState) => state.iclrReducer)
     const {currentPreds} = useSelector((state: ProjectState) => state.predictionReducer)
-    const {pathname} = useLocation()        
-    const [bib, setBib] = useState<any[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
-    const [val, setVal] = useState('Likes')
-    const [expandedAbstracts, setExpandedAbstracts] = useState<Set<number>>(new Set());
-    const [expandedAuthors, setExpandedAuthors] = useState<Set<number>>(new Set());
     const dispatch = useDispatch();
-
-    // Pagination state
-    const [currentPage, setCurrentPage] = useState<number>(1);
-    const [pageInput, setPageInput] = useState<string>('1');
-    const [recordsPerPage] = useState<number>(20);
-    const [totalRecords, setTotalRecords] = useState<number>(0);
-    const [searchTerm, setSearchTerm] = useState<string>('');
     
-    // Remove sortOrder, randomOrder, and related states
-    // const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'random'>('desc');
-    // const [randomOrder, setRandomOrder] = useState<number[]>([]);
-
-    const [userPrompt, setUserPrompt] = useState<string>("");
-    const [openModalPaper, setOpenModalPaper] = useState<any | null>(null);
-    const [showConfirmationModal, setShowConfirmationModal] = useState<boolean>(false);
-    const [confirmationPrompt, setConfirmationPrompt] = useState<string>("");
-    const [rebuttal, setRebuttal] = useState<boolean>(false); // New state for Rebuttal toggle
+    // Use global year context instead of local state
+    const { currentYear, availableYears, setYear: setGlobalYear } = useYear();
     
-    const handlePrompting = async (url: string, id: string, rebuttal: number) => {
-        if (userPrompt === "") {
-            setUserPrompt(home.BASIC_PROMPT);
-        }
-        const response = await home.promptSubmissionByUrl(url, confirmationPrompt, rebuttal).then((response) => {
-            dispatch(updatePrediction({paper_id: id, prompt: userPrompt, prediction: response}));
-            setOpenModalPaper(null);
-            setShowConfirmationModal(false);
-            setRebuttal(false);
-        }).catch((error) => {
-            console.error(error);
-        });
-    }
+    const [allPapers, setAllPapers] = useState<any[]>([]); // For plot data
+    
+    // Loading states
+    const [isLoadingAllData, setIsLoadingAllData] = useState<boolean>(false);
+    const [isLoadingPredictions, setIsLoadingPredictions] = useState<boolean>(false);
 
-    // Consolidated data fetching function
-    const fetchPaginatedData = useCallback(async () => {
-        try {
-            const skip = (currentPage - 1) * recordsPerPage;
-            const result = await home.findPaginatedIclrSubmissions(recordsPerPage, skip, searchTerm);
-            setBib(processPapersData(result.data));
-            setTotalRecords(result.totalCount);
-            dispatch(setIclr(result.data));
-            dispatch(setIclrName(result.name));
+    const [currentPrompt, setCurrentPrompt] = useState<string>(home.BASIC_PROMPT);
+    const [pub_rebuttal, setPubRebuttal] = useState<boolean>(false);
+    const [field, setField] = useState<string>("rating");
 
-            // --- New logic for predictions ---
-            // Get current predictions from Redux
-            const preds = currentPreds || [];
-            // Find papers on this page with prediction "O" or missing
-            const papersNeedingPred = result.data.filter(paper => {
-                const pred = preds.find(p => p.paper_id === paper._id);
-                return !pred || pred.prediction === "O";
+    // New state for dropdown tooltip
+    const [dropdownTooltipVisible, setDropdownTooltipVisible] = useState<boolean>(false);
+    const [dropdownTooltipPosition, setDropdownTooltipPosition] = useState<{x: number, y: number}>({x: 0, y: 0});
+    const [dropdownTooltipContent, setDropdownTooltipContent] = useState<string>("");
+    const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
+    
+    // Memoize expensive computations
+    const processedAllPapers = useMemo(() => processPapersData(allPapers), [allPapers]);
+    
+    // Memoize prediction lookup to avoid repeated filtering
+    const predictionsMap = useMemo(() => {
+        const map = new Map();
+        if (currentPreds) {
+            currentPreds.forEach(pred => {
+                map.set(pred.paper_id, pred.prediction);
             });
-            if (papersNeedingPred.length > 0) {
-                // Fetch predictions for these papers (assuming you have such an API)
-                const paperIds = papersNeedingPred.map((p : any) => p._id);
-                const newPredictions = await home.getPredictionsByPaperIdsAndBasicPrompt(paperIds); // You may need to implement this
-                // Merge new predictions into Redux state
-                const updatedPreds = [
-                    ...preds.filter(p => !paperIds.includes(p.paper_id)),
-                    ...newPredictions
-                ];
-                dispatch(setCurrentPreds(updatedPreds));
-            }
-        } catch (error: any) {
-            console.error('Error fetching paginated data:', error.response?.data || error);
         }
-    }, [currentPage, recordsPerPage, searchTerm, dispatch, currentPreds]);
+        return map;
+    }, [currentPreds]);
 
-    useEffect(() => {
-        fetchPaginatedData();
-    }, [fetchPaginatedData]);
+    // Memoize prompt index to avoid recalculating on every render
+    const currentPromptIndex = useMemo(() => {
+        return home.PROMPT_CANDIDATES.findIndex(p => p === currentPrompt) + 1;
+    }, [currentPrompt]);
 
-    // Remove the old "fetch all predictions on mount" logic
-    useEffect(() => {
-        async function fetchPredictions() {
-            try {
-                const predictions = await home.getAllPredictionsByBasicPrompt();
-                dispatch(setCurrentPreds(predictions.map((m: any) => ({
-                    paper_id: m.paper_id, 
-                    prompt: m.prompt, 
-                    prediction: m.prediction
-                }))));
-            } catch (error) {
-                console.error('Error fetching predictions:', error);
-            }
-        }
-        fetchPredictions();
-    }, [dispatch]);
-
-    useEffect(() => {
-        setCurrentPage(1); // Reset to first page when search term changes
-        setExpandedAbstracts(new Set());
-        setExpandedAuthors(new Set());
-    }, [searchTerm]);
-
-    useEffect(() => {
-        setPageInput(currentPage.toString());
-    }, [currentPage]);
-    
-
-    const handleDeleteSubmission = (bid: any) =>{
-        const rest = currentIclr.filter((m) => m._id !== bid)
-        home.deleteSubmission(bid).then((status) => {
-            dispatch(setIclr(rest));
-            // Also update local bib state to keep UI in sync
-            setBib(prevBib => prevBib.filter((m) => m._id !== bid));
-        });
-    }
-
-
-    const findUsrName = (id : any) =>{
+    // Fetch all data for plot (no pagination) - ADD currentYear dependency
+    const fetchAllData = useCallback(async () => {
+        setIsLoadingAllData(true);
         try {
-            const nameU = users.find((i) => i._id === id).username
-            return nameU
+            const result = await home.findAllIclrSubmissionsWithPartialMetareviews();
+            setAllPapers(result.data);
+            console.log(result.data[0]);
+            dispatch(setIclrName(result.name));
+        } catch (error: any) {
+            console.error('Error fetching all data:', error.response?.data || error);
+        } finally {
+            setIsLoadingAllData(false);
+        }
+    }, [dispatch, currentYear]);
+
+    // Separate function for fetching predictions for all papers - ADD currentYear dependency
+    const fetchPredictionsForAllPapers = useCallback(async (papers: any[], prompt: string, rebuttal: boolean) => {
+        setIsLoadingPredictions(true);
+        try {
+            const newPredictions = await home.getPredsByPromptAndRebuttal(prompt, rebuttal ? 1 : 0);
+            const processedPredictions = newPredictions.map((p: any) => ({
+                ...p,
+                prediction: p.prediction.toLowerCase() === 'yes' || p.prediction.toLowerCase() === 'accept' ? "Accept" 
+                    : p.prediction.toLowerCase() === 'no' || p.prediction.toLowerCase() === 'reject' ? "Reject" : "O"
+            }));
+            const acceptCount = processedPredictions.filter(p => p.prediction === 'Accept').length;
+            const rejectCount = processedPredictions.filter(p => p.prediction === 'Reject').length;
+            console.log(`Processed predictions - Accept: ${acceptCount}, Reject: ${rejectCount}`);
+            dispatch(setCurrentPreds(processedPredictions));
         } catch (error) {
+            console.error('Error fetching predictions:', error);
+        } finally {
+            setIsLoadingPredictions(false);
         }
-    }
+    }, [dispatch, currentYear]);
 
+    // Main data fetching effect - fetch all data for plot
+    useEffect(() => {
+        fetchAllData();
+    }, [fetchAllData]);
 
-    // Search and pagination helper functions
-    // const filteredBib = bib.filter((paper: any) =>
-    //     paper.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //     paper.authors.some((author: string) => 
-    //         author.toLowerCase().includes(searchTerm.toLowerCase())
-    //     )
-    // );
-
-    // Remove sorting logic, just use filteredBib as is
-    // const sortedBib = [...filteredBib].sort((a, b) => {
-    //     if (sortOrder === 'asc') {
-    //         return a.rating - b.rating;
-    //     } else if (sortOrder === 'desc') {
-    //         return b.rating - a.rating;
-    //     } else {
-    //         // Random order - use stable random order
-    //         const aIndex = filteredBib.indexOf(a);
-    //         const bIndex = filteredBib.indexOf(b);
-    //         return (randomOrder[aIndex] || 0) - (randomOrder[bIndex] || 0);
-    //     }
-    // });
-    // const sortedBib = filteredBib;
+    // Effect to fetch predictions when all papers change or prompt/rebuttal changes
+    useEffect(() => {
+        if (allPapers.length > 0) {
+            fetchPredictionsForAllPapers(allPapers, currentPrompt, pub_rebuttal);
+        }
+    }, [allPapers, currentPrompt, pub_rebuttal, fetchPredictionsForAllPapers]);
     
-    // const indexOfLastRecord = currentPage * recordsPerPage;
-    // const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-    // const currentRecords = sortedBib.slice(indexOfFirstRecord, indexOfLastRecord);
-    const currentRecords = bib;
-    const totalPages = Math.ceil(totalRecords / recordsPerPage);
+    // Add click outside handler for dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (dropdownOpen && !target.closest('.dropdown-container') && !target.closest('.prompt-dropdown-menu')) {
+                setDropdownOpen(false);
+                setDropdownTooltipVisible(false);
+            }
+        };
 
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [dropdownOpen]);
 
-    const goToPreviousPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
+    // Tooltip handlers for dropdown options
+    const handleDropdownOptionMouseEnter = useCallback((event: React.MouseEvent, prompt: string) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        setDropdownTooltipPosition({
+            x: rect.right + 10, // Position to the right of the dropdown item
+            y: rect.top + rect.height / 2
+        });
+        setDropdownTooltipContent(prompt);
+        setDropdownTooltipVisible(true);
+    }, []);
 
-    const goToPage = (pageNumber: number) => {
-        setCurrentPage(pageNumber);
-    };
+    const handleDropdownOptionMouseLeave = useCallback(() => {
+        setDropdownTooltipVisible(false);
+    }, []);
 
-    // Remove handleSortRating and related logic
-    // const handleSortRating = () => {
-    //     if (sortOrder === 'desc') {
-    //         setSortOrder('asc');
-    //     } else if (sortOrder === 'asc') {
-    //         setSortOrder('random');
-    //         // Generate stable random order for the current filtered results
-    //         const newRandomOrder = filteredBib.map(() => Math.random());
-    //         setRandomOrder(newRandomOrder);
-    //     } else {
-    //         setSortOrder('desc');
-    //     }
-    //     setCurrentPage(1); // Reset to first page when sorting changes
-    // };
-
-    const toggleAbstract = (index: number) => {
-        const newExpanded = new Set(expandedAbstracts);
-        if (newExpanded.has(index)) {
-            newExpanded.delete(index);
-        } else {
-            newExpanded.add(index);
-        }
-        setExpandedAbstracts(newExpanded);
-    };
-
-    const toggleAuthors = (index: number) => {
-        const newExpanded = new Set(expandedAuthors);
-        if (newExpanded.has(index)) {
-            newExpanded.delete(index);
-        } else {
-            newExpanded.add(index);
-        }
-        setExpandedAuthors(newExpanded);
-    };
-
-    // useEffect(() => {
-    //     fetchAllData();
-    //   }, [fetchAllData]);
-
-    // useEffect(() => {
-    //     setCurrentPage(1); // Reset to first page when search term changes
-    //     setExpandedAbstracts(new Set());
-    //     setExpandedAuthors(new Set());
-    // }, [searchTerm]);
-
-    // useEffect(() => {
-    //     setCurrentPage(1); // Reset to first page when sort order changes
-    //     setExpandedAbstracts(new Set());
-    //     setExpandedAuthors(new Set());
-    // }, []); // No dependency on sortOrder
-
-    // useEffect(() => {
-    //     setPageInput(currentPage.toString());
-    // }, [currentPage]);
-
-    // Add hover state for clickable Rating link
-    const [ratingLinkHover, setRatingLinkHover] = useState(false);
-
+    // Memoize dropdown items to prevent unnecessary re-renders
+    const dropdownItems = useMemo(() => {
+        return home.PROMPT_CANDIDATES.map((prompt, index) => (
+            <button
+                key={index}
+                className={`dropdown-item ${currentPrompt === prompt ? 'active' : ''}`}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Dropdown item clicked:', prompt);
+                    setCurrentPrompt(prompt);
+                    setDropdownOpen(false);
+                    setDropdownTooltipVisible(false);
+                }}
+                onMouseEnter={(e) => handleDropdownOptionMouseEnter(e, prompt)}
+                onMouseLeave={handleDropdownOptionMouseLeave}
+                style={currentPrompt === prompt ? adminStyles.dropdown.itemActive : adminStyles.dropdown.item}
+            >
+                Prompt {index + 1}
+            </button>
+        ));
+    }, [currentPrompt, handleDropdownOptionMouseEnter, handleDropdownOptionMouseLeave]);
 
     return (
-    <div style={adminStyles.container}>
-        <div className='px-5 py-2 d-flex justify-content-center align-items-center' > 
-            {/* {JSON.stringify(totalRecords)} */}
-            <div className="d-flex align-items-center gap-4">
-                {totalRecords > 0 && (
-                    <div className="d-flex align-items-center">
-                        <button 
-                            onClick={goToPreviousPage} 
-                            disabled={currentPage === 1}
-                            className="btn me-3 rounded-pill"
-                            style={getPaginationButtonStyle(currentPage === 1)}
-                            onMouseEnter={(e) => {
-                                if (currentPage !== 1) {
-                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (currentPage !== 1) {
-                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }
-                            }}
-                        >
-                            ← Previous
-                        </button>
-                        <div className="text-black text-center" style={adminStyles.pagination.pageInfo}>
-                            <div className="fw-bold">
-                                Page 
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={totalPages}
-                                    value={pageInput}
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        setPageInput(val);
-                                    }}
-                                    onBlur={() => {
-                                        let pageNum = parseInt(pageInput, 10);
-                                        if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
-                                        if (pageNum > totalPages) pageNum = totalPages;
-                                        setCurrentPage(pageNum);
-                                    }}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter') {
-                                            let pageNum = parseInt(pageInput, 10);
-                                            if (isNaN(pageNum) || pageNum < 1) pageNum = 1;
-                                            if (pageNum > totalPages) pageNum = totalPages;
-                                            setCurrentPage(pageNum);
-                                        }
-                                    }}
-                                    style={adminStyles.pagination.pageInput}
-                                />
-                                of {totalPages}
-                            </div>
-                            <div style={adminStyles.pagination.totalRecords}>
-                                {totalRecords} total records
-                            </div>
-                        </div>
-                        <button 
-                            onClick={goToNextPage} 
-                            disabled={currentPage === totalPages}
-                            className="btn ms-3 rounded-pill"
-                            style={getPaginationButtonStyle(currentPage === totalPages)}
-                            onMouseEnter={(e) => {
-                                if (currentPage !== totalPages) {
-                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (currentPage !== totalPages) {
-                                    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }
-                            }}
-                        >
-                            Next →
-                        </button>
-                    </div>
-                )}
-                <div className="d-flex align-items-center">
-                    <div className="position-relative">
-                        <i className="fas fa-search position-absolute" 
-                           style={adminStyles.search.icon}></i>
-                        <input
-                            type="text"
-                            placeholder="Search papers by title or author..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="form-control rounded-pill"
-                            style={adminStyles.search.input}
-                            onFocus={(e) => {
-                                Object.assign(e.target.style, adminStyles.search.inputFocused);
-                            }}
-                            onBlur={(e) => {
-                                Object.assign(e.target.style, adminStyles.search.inputBlurred);
-                            }}
-                        />
-                    </div>
+    <div style={adminStyles.container} className="p-4">
+        <div className="d-flex gap-4 m-2">
+            {/* Left Side Menu - Prompt Controls */}
+            <div className="card border-0 shadow-lg" style={{
+                ...adminStyles.table.card, 
+                overflow: 'visible',
+                width: '300px',
+                minHeight: 'fit-content',
+                // position: 'sticky',
+                // top: '20px'
+            }}>
+                <div className="card-header border-0 py-3" style={adminStyles.table.header}>
+                    <h6 className="mb-0">Prompt Controls</h6>
                 </div>
-            </div>
-        </div>
-                
-        <div className="mx-4">
-            <div className="card border-0 shadow-lg" style={adminStyles.table.card}> 
-                <div className="card-header border-0 py-2" 
-                     style={adminStyles.table.header}>
-                    <div className="row align-items-center text-center" style={adminStyles.table.headerRow}>
-                        <div className="col-1">
-                            Conference
-                        </div>
-                        <div className="col-3">
-                            Paper Title
-                        </div>
-                        <div className='col-2'>
-                            Authors
-                        </div>
-                        <div className="col-1">
-                            <Link
-                                to="/Guest/Rating"
-                                style={ratingLinkHover ? { ...adminStyles.clickableLink, ...adminStyles.clickableLinkHover } : adminStyles.clickableLink}
-                                onMouseEnter={() => setRatingLinkHover(true)}
-                                onMouseLeave={() => setRatingLinkHover(false)}
-                                tabIndex={0}
-                            >
-                                Rating
-                            </Link>
-                        </div>
-                        <div className='col-1'>
-                            Ratings
-                        </div>
-                        <div className='col-1'> Confidence </div>
-                        <div className='col-2'>Decision</div>
-                        <div className='col-1'>Prediction</div>
+                <div className="card-body p-4" style={{ overflow: 'visible' }}>
+                    <div className="mb-3 mb-3" >
+                        <YearSelector showLabel={true} />
                     </div>
-                </div>
-                <>
-                {/* {JSON.stringify(currentPreds)} */}
-                </>
-                <div className="card-body p-0"
-                     style={adminStyles.table.body}>
-                    {!currentRecords.length && searchTerm && (
-                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
-                            <i className="fas fa-search" style={adminStyles.emptyState.icon}></i>
-                            <h5>No papers found</h5>
-                            <p>No papers match "{searchTerm}"</p>
-                        </div>
-                    )}
-                    {!currentRecords.length && !searchTerm && (
-                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
-                            <i className="fas fa-inbox" style={adminStyles.emptyState.icon}></i>
-                            <h5>No papers available</h5>
-                            <p>There are no papers to display</p>
-                        </div>
-                    )}
-                    {currentRecords.length > 0 && currentRecords.map((br: any, index : number) => 
-                    ( 
-                        <div className="border-bottom" key={index} style={{ 
-                            ...getRowBackground(index, expandedAbstracts.has(index) || expandedAuthors.has(index)),
-                            transition: 'all 0.3s ease',
-                            padding: '20px'
-                        }}
-                        onMouseEnter={(e) => {
-                            Object.assign(e.currentTarget.style, adminStyles.row.hover);
-                        }}
-                        onMouseLeave={(e) => {
-                            const baseStyle = getRowBackground(index, expandedAbstracts.has(index) || expandedAuthors.has(index));
-                            e.currentTarget.style.backgroundColor = baseStyle.backgroundColor || '#ffffff';
-                            e.currentTarget.style.transform = 'translateX(0)';
-                        }}>
-                            <div className="row align-items-center">
-                                <div className="col-1 text-center">
-                                    <span className="badge rounded-pill px-3 py-2" 
-                                          style={adminStyles.badge.conference}>
-                                        {currentIclrName}
-                                    </span>
-                                </div>
-                                <div className="col-3">
-                                    <div className='text-center d-block mb-2'>
-                                        {br.url ? (
-                                            <a href={br.url} target="_blank" rel="noopener noreferrer" 
-                                               className="text-decoration-none fw-bold"
-                                               style={adminStyles.title.link}
-                                               onMouseEnter={(e) => {
-                                                   e.currentTarget.style.color = adminStyles.title.linkHover.color;
-                                               }}
-                                               onMouseLeave={(e) => {
-                                                   e.currentTarget.style.color = adminStyles.title.link.color;
-                                               }}>
-                                                {br.title}
-                                            </a>
-                                        ) : (
-                                            <strong className='fs-6' style={adminStyles.title.text}>{br.title}</strong>
-                                        )}
-                                    </div>
-                                    <div className="text-center">
-                                        <button 
-                                            onClick={() => toggleAbstract(index)}
-                                            className="btn btn-sm rounded-pill"
-                                            style={expandedAbstracts.has(index) ? adminStyles.button.abstractExpanded : adminStyles.button.abstract}
-                                            onMouseEnter={(e) => {
-                                                if (!expandedAbstracts.has(index)) {
-                                                    e.currentTarget.style.backgroundColor = adminStyles.button.abstractHover.backgroundColor;
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                if (!expandedAbstracts.has(index)) {
-                                                    e.currentTarget.style.backgroundColor = adminStyles.button.abstract.backgroundColor;
-                                                }
-                                            }}
-                                        >
-                                            {expandedAbstracts.has(index) ? (
-                                                <>
-                                                    <FaEyeSlash /> Hide Abstract
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaEye /> Show Abstract
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                    {expandedAbstracts.has(index) && (
-                                        <div 
-                                            className="mt-3 p-4 rounded-3"
-                                            style={adminStyles.abstract.container}
-                                        >
-                                            {br.abstract}
-                                        </div>
+                    <div className="d-flex flex-column gap-4">
+                        <div className="w-100">
+                            <div className="d-flex flex-column dropdown-container" style={{ position: 'relative', width: '100%' }}>
+                                <label className="form-label mb-2" style={{ fontSize: '0.9rem', fontWeight: '600' }}>
+                                    Select Prompt:
+                                </label>
+                                <button 
+                                    className="btn btn-sm btn-outline-secondary dropdown-toggle w-100" 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        console.log('Dropdown clicked, current state:', dropdownOpen);
+                                        setDropdownOpen(!dropdownOpen);
+                                    }}
+                                    style={{...adminStyles.dropdown.button, width: '100%'}}
+                                    disabled={isLoadingPredictions}
+                                >
+                                    {isLoadingPredictions ? (
+                                        <>
+                                            <div className="spinner-border spinner-border-sm me-2" role="status">
+                                                <span className="visually-hidden">Loading...</span>
+                                            </div>
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        `Prompt ${currentPromptIndex}`
                                     )}
-                                </div>
-                                <div className='col-2 text-center'>
-                                    <div className='w-100'>
-                                        <ul className='list-unstyled mb-0' style={expandedAuthors.has(index) ? adminStyles.authors.listExpanded : adminStyles.authors.list}>
-                                            {br.authors.map((author: string, idx: number) => (
-                                                <li key={idx} style={adminStyles.authors.item}>
-                                                    {author}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        {br.authors.length > 5 && (
-                                            <button 
-                                                onClick={() => toggleAuthors(index)}
-                                                className="btn btn-sm rounded-pill mt-2"
-                                                style={expandedAuthors.has(index) ? adminStyles.button.authorsExpanded : adminStyles.button.authors}
-                                                onMouseEnter={(e) => {
-                                                    if (!expandedAuthors.has(index)) {
-                                                        e.currentTarget.style.backgroundColor = adminStyles.button.authorsHover.backgroundColor;
-                                                    }
+                                </button>
+                                
+                                {dropdownOpen && (
+                                    <div 
+                                        className="dropdown-menu show prompt-dropdown-menu"
+                                        style={{
+                                            ...adminStyles.dropdown.menu,
+                                            zIndex: 9999,
+                                            display: 'block',
+                                            maxHeight: 'none',
+                                            height: 'auto',
+                                            overflow: 'visible',
+                                            width: '100%'
+                                        }}
+                                    >
+                                        {home.PROMPT_CANDIDATES.map((prompt, index) => (
+                                            <button
+                                                key={index}
+                                                className={`dropdown-item ${currentPrompt === prompt ? 'active' : ''}`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    console.log('Dropdown item clicked:', prompt);
+                                                    setCurrentPrompt(prompt);
+                                                    setDropdownOpen(false);
+                                                    setDropdownTooltipVisible(false);
                                                 }}
-                                                onMouseLeave={(e) => {
-                                                    if (!expandedAuthors.has(index)) {
-                                                        e.currentTarget.style.backgroundColor = adminStyles.button.authors.backgroundColor;
-                                                    }
-                                                }}
+                                                onMouseEnter={(e) => handleDropdownOptionMouseEnter(e, prompt)}
+                                                onMouseLeave={handleDropdownOptionMouseLeave}
+                                                style={currentPrompt === prompt ? adminStyles.dropdown.itemActive : adminStyles.dropdown.item}
                                             >
-                                                {expandedAuthors.has(index) ? (
-                                                    <>
-                                                        <FaChevronUp /> Show Less
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FaChevronDown /> Show All ({br.authors.length})
-                                                    </>
-                                                )}
+                                                Prompt {index + 1}
                                             </button>
-                                        )}
+                                        ))}
                                     </div>
-                                </div>
-                                <div className="col-1 text-center">
-                                    <div className="fw-bold" style={getRatingColor(br.rating)}>
-                                        {br.rating}
-                                    </div>
-                                </div>
-                                <div className='col-1 text-center'>
-                                    <div className='w-100'>
-                                        <ul className='list-unstyled mb-0'>
-                                            {br.ratings.map((rating: number, idx: number) => (
-                                                <li key={idx} style={getIndividualRatingColor(rating)}>
-                                                    {rating}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div className='col-1 text-center'>
-                                    <div className="fw-bold" style={getConfidenceColor(br.confidence)}>
-                                        {br.confidence}
-                                    </div>
-                                </div>
-                                <div className='col-2 text-center'>
-                                    <span className="badge rounded-pill px-3 py-2" 
-                                          style={{ ...getDecisionColors(br.decision), ...adminStyles.badge.decision }}>
-                                        {br.decision}
-                                    </span>
-                                </div>
-                                <div className='col-1 text-center'>
-                                    <div className="text-muted" style={{ fontSize: '0.9rem' }}>
-                                        {(() => {
-                                            const prediction = currentPreds.find(pred => pred.paper_id === br._id)?.prediction;
-                                            const buttonText = prediction || <><FaO /></>;
-                                            
-                                            return (
-                                                <button className="btn btn-sm rounded-pill" 
-                                                style={{ ...getPredictionColors(prediction), ...adminStyles.button.prediction }}
-                                                    onClick={() => {
-                                                        setOpenModalPaper(br);
-                                                    }}>
-                                                    {buttonText}
-                                                </button>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
+                                )}
                             </div>
-                        </div>)
-                        )
-                        }  
-                </div>
-            </div>
-        </div>
+                            <div className="mt-2 text-danger fst-italic" style={{ fontSize: '0.8rem' }}>
+                                {dropdownTooltipContent ? dropdownTooltipContent : home.BASIC_PROMPT}
+                            </div>
 
-        {/* Modal for prompt input - rendered outside table structure */}
-        {openModalPaper && (
-            <div style={adminStyles.modal.overlay}>
-                <div style={adminStyles.modal.container}>
-                    <h4 className="mb-4 text-center" style={adminStyles.modal.title}>
-                        Prompting ... 
-                    </h4>
-                    <div style={{ position: 'relative' }}>
-                        <textarea
-                            className="form-control mb-4"
-                            rows={6}
-                            value={userPrompt}
-                            onChange={e => setUserPrompt(e.target.value)}
-                            placeholder=""
-                            style={adminStyles.modal.textarea}
-                            autoFocus
-                        />
-                        {!userPrompt && (
-                            <div style={adminStyles.modal.placeholder}>
-                                Enter your custom prompt or leave blank to use the default prompt:
-                                <br />
-                                <div style={adminStyles.modal.placeholderText}>{home.BASIC_PROMPT}</div>
+                        </div>
+                        <div className="w-100">
+                            <div className="d-flex flex-column">
+                                <div className="form-check form-switch">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        id="rebuttalSwitch"
+                                        checked={pub_rebuttal}
+                                        onChange={() => {
+                                            setPubRebuttal(!pub_rebuttal);
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                    <label className="form-check-label" htmlFor="rebuttalSwitch" style={{ fontSize: '0.9rem' }}>
+                                        <b>Include Rebuttal</b>
+                                    </label>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                    <div className="d-flex gap-3 justify-content-end">
-                        <button 
-                            className="btn btn-outline-secondary px-4 py-2" 
-                            onClick={() => {
-                                setOpenModalPaper(null);
-                            }}
-                            style={adminStyles.modal.button}
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            className="btn btn-primary px-4 py-2" 
-                            onClick={() => {
-                                if (openModalPaper) {    
-                                    setUserPrompt(userPrompt !== "" ? userPrompt : home.BASIC_PROMPT);
-                                    setConfirmationPrompt(util.prompt_tmp.replace("{{ task }}", userPrompt !== "" ? userPrompt : home.BASIC_PROMPT));
-                                    setShowConfirmationModal(true);
-                                }
-                            }}
-                            style={adminStyles.modal.submitButton}
-                        >
-                            Submit
-                        </button>
+                            <div className="d-flex flex-column">
+                                <label className="form-label mb-2" style={{ fontSize: '0.9rem', fontWeight: '600' }}>
+                                    Field:
+                                </label>
+                                <select
+                                    className="form-select form-select-sm"
+                                    value={field}
+                                    onChange={(e) => setField(e.target.value)}
+                                    style={{ fontSize: '0.9rem' }}
+                                >
+                                    <option value="rating">Rating</option>
+                                    <option value="confidence">Confidence</option>
+                                </select>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             </div>
-        )}
-
-        {/* Confirmation Modal for prompt review */}
-        {showConfirmationModal && (
-            <div style={adminStyles.modal.overlay}>
-                <div style={adminStyles.modal.container}>
-                    <h4 className="mb-4 text-center" style={adminStyles.modal.title}>
-                        Confirm Template
-                    </h4>
-                    <div className="mb-3">
-                        <label className="form-label fw-bold">Paper Title:</label>
-                        <div className="text-muted">
-                            {openModalPaper?.url ? (
-                                <a href={openModalPaper.url} target="_blank" rel="noopener noreferrer" style={{ color: 'blue' }}>
-                                    {openModalPaper.title}
-                                </a>
+            
+            {/* Main Content Area */}
+            <div className="flex-grow-1">
+                {/* Rating Distribution Chart */}
+                {!isLoadingAllData && processedAllPapers.length > 0 && (
+                    <div className="card border-0 shadow-lg" style={adminStyles.table.card}>
+                        <div className="card-header border-0 py-3" style={adminStyles.table.header}>
+                            <h6 className="mb-0">
+                                Prediction Distribution 
+                            </h6>
+                        </div>
+                        <div className="card-body p-4">
+                            {isLoadingPredictions ? (
+                                <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+                                    <div className="text-center">
+                                        <div className="spinner-border text-primary" role="status">
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
+                                        <div className="mt-3 text-muted">Loading prediction data...</div>
+                                    </div>
+                                </div>
                             ) : (
-                                openModalPaper?.title
+                                <RatingDistributionChart 
+                                    papers={processedAllPapers}
+                                    currentPrompt={currentPrompt}
+                                    predictionsMap={predictionsMap}
+                                    field={field}
+                                />
                             )}
                         </div>
                     </div>
-                    <div style={{ position: 'relative' }}>
-                        <label className="form-label fw-bold">Prompt Template:</label>
-                          {/* Info message for Rebuttal toggle */}
-                          <div style={{ color: 'red', fontSize: '0.85em', fontStyle: 'italic', marginTop: '0.25rem' }}>
-                            the following {'{text}'} under Prediction will be replaced with complete official reviews.
-                        </div>
-                        <br />
-                        <textarea
-                            className="form-control mb-4"
-                            rows={8}
-                            value={confirmationPrompt}
-                            onChange={e => setConfirmationPrompt(e.target.value)}
-                            placeholder="Enter your prompt here..."
-                            style={adminStyles.modal.textarea}
-                            autoFocus
-                        />
-                    </div>
-                    <div className="form-check mb-3">
-                        <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="rebuttalToggle"
-                            checked={rebuttal}
-                            onChange={() => setRebuttal(!rebuttal)}
-                        />
-                        <label className="form-check-label fw-bold text-danger" htmlFor="rebuttalToggle">
-                            Rebuttal
-                        </label>
-                        {/* Info message for Rebuttal toggle */}
-                        <div style={{ color: 'red', fontSize: '0.85em', fontStyle: 'italic', marginTop: '0.25rem' }}>
-                            {rebuttal
-                                ? 'Rebuttal Included in {text}'
-                                : ''}
-                        </div>
-                    </div>
-                    <div className="d-flex gap-3 justify-content-end">
-                        <button 
-                            className="btn btn-outline-secondary px-4 py-2" 
-                            onClick={() => {
-                                setShowConfirmationModal(false);
-                            }}
-                            style={adminStyles.modal.button}
-                        >
-                            Back
-                        </button>
-                        <button 
-                            className="btn btn-success px-4 py-2" 
-                            onClick={() => {
-                                if (openModalPaper) {    
-                                    handlePrompting(openModalPaper.url, openModalPaper._id, rebuttal ? 1 : 0);
-                                }
-                            }}
-                            style={{
-                                ...adminStyles.modal.submitButton,
-                                backgroundColor: '#059669',
-                                border: 'none'
-                            }}
-                        >
-                            Submit 
-                        </button>
-                    </div>
+                )}
+            </div>
+        </div>
+
+        {/* Tooltip for dropdown options */}
+        {dropdownTooltipVisible && (
+            <div 
+                style={{
+                    ...adminStyles.tooltip.dropdown,
+                    left: dropdownTooltipPosition.x,
+                    top: dropdownTooltipPosition.y,
+                    transform: 'translateY(-50%)'
+                }}
+            >
+                <div style={adminStyles.tooltip.title}>
+                    Prompt Preview:
                 </div>
+                <div style={adminStyles.tooltip.content}>
+                    {dropdownTooltipContent}
+                </div>
+                <div 
+                    style={{
+                        ...adminStyles.tooltip.arrow,
+                        position: 'absolute',
+                        top: '50%',
+                        left: '-6px',
+                        transform: 'translateY(-50%)',
+                        borderTop: '6px solid transparent',
+                        borderBottom: '6px solid transparent',
+                        borderRight: '6px solid #333'
+                    }}
+                />
             </div>
         )}
  

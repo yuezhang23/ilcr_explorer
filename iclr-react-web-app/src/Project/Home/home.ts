@@ -28,9 +28,9 @@ export const findAllIclrSubmissions = async () => {
 
 
 // Get all ICLR submissions without metareviews
-export const findAllIclrSubmissionsWithoutMetareviews = async () => {
-    const response = await axios.get(`${ICLR_API}/without_metareviews`).then((res) => res.data);
-    return response.data;
+export const findAllIclrSubmissionsWithPartialMetareviews = async () => {
+    const response = await axios.get(`${ICLR_API}/with_partial_metareviews`).then((res) => res.data);
+    return {data: response.data, name: response.name};
 };
 
 // Get random ICLR submissions (public)
@@ -75,11 +75,7 @@ export const findIclrByDecision = async (decision: string) => {
     return response.data;
 };
 
-// Find ICLR submissions by year
-export const findIclrByYear = async (year: string) => {
-    const response = await axios.get(`${ICLR_API}/year/${year}`);
-    return response.data;
-};
+// Note: findIclrByYear function removed - use global year setting instead
 
 // Bulk create ICLR submissions (should be POST)
 export const createIclrSubmissions = async (submissions: any[]) => {
@@ -129,7 +125,7 @@ export const findPaginatedIclrSubmissions = async (limit: number, skip: number, 
     }
     
     const response = await axios.get(`${ICLR_API}/paginated?${params}`);
-    console.log("response data length", response.data.data.length);
+    // console.log("response data length", response.data.data.length);
     return response.data;
 };
 
@@ -242,6 +238,13 @@ export const getPredictionsByPaperIdsAndPrompt = async (paperIds: string[], prom
 // Get predictions by paper ids and prompt and rebuttal
 export const getPredsByPaperIdsAndPromptAndRebuttal = async (paperIds: string[], prompt: string, rebuttal: number) => {
     const response = await axios.post(`${PROMPT_API}/predictions_by_paper_ids_and_prompt_and_rebuttal`, { paper_ids: paperIds, prompt: prompt, rebuttal: rebuttal });
+    return response.data;
+};
+
+// Get predictions by paper ids and prompt and rebuttal in batches
+export const getPredsByPromptAndRebuttal = async (prompt: string, rebuttal: number) => {    
+    const response = await axios.post(`${PROMPT_API}/predictions_by_prompt_and_rebuttal`, { prompt: prompt, rebuttal: rebuttal });
+    
     return response.data;
 };
 
