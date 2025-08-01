@@ -508,6 +508,7 @@ function AdminHome() {
         });
     }, [userPrompt, confirmationPrompt, dispatch]);
 
+
     // Consolidated data fetching function - REMOVED currentPreds dependency to prevent infinite loop
     const fetchPaginatedData = useCallback(async () => {
         setIsLoadingData(true);
@@ -588,8 +589,6 @@ function AdminHome() {
     }, [dropdownOpen, conferenceDropdownOpen]);
     
 
-
-
     const goToNextPage = useCallback(() => {
         if (currentPage < totalPages) {
             setCurrentPage(currentPage + 1);
@@ -643,7 +642,7 @@ function AdminHome() {
 
     return (
     <div style={adminStyles.container}>
-        <div className='px-5 py-2 d-flex justify-content-between align-items-center' > 
+        <div className='py-2 d-flex justify-content-between align-items-center' > 
             <div className="d-flex ms-5 align-items-center position-relative conference-dropdown-container">
                 <label className="me-2 fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
                     ICLR
@@ -764,7 +763,7 @@ function AdminHome() {
                 </div>
             </div>
         </div>
-        <div className='d-flex px-5' style={{ minHeight: 'calc(100vh - 200px)' }}>
+        <div className='d-flex' style={{ minHeight: 'calc(100vh - 200px)' }}>
             <div className='col-2 d-none d-lg-block me-3 d-flex flex-column'>
                 <Leaderboard />
             </div> 
@@ -774,22 +773,22 @@ function AdminHome() {
                         <div className="card-header border-0 " 
                             style={adminStyles.table.header}>
                             <div className="row align-items-center text-center" style={adminStyles.table.headerRow}>
-                                <div className="col-3">
+                                <div className="col-3 mb-4">
                                     Paper Title
                                 </div>
-                                <div className='col-2'>
+                                <div className='col-2 mb-4'>
                                     Authors
                                 </div>
-                                <div className="col-1">
+                                <div className="col-1 mb-4">
                                     Rating
                                 </div>
-                                <div className='col-1'>
+                                <div className='col-1 mb-4'>
                                     Ratings
                                 </div>
-                                <div className='col-2'> 
+                                <div className='col-2 mb-4'> 
                                     Confidence 
                                 </div>
-                                <div className='col-2'>
+                                <div className='col-2 mb-4'>
                                     Decision
                                 </div>
                                 <div className='col-1'>
@@ -1022,19 +1021,19 @@ function AdminHome() {
                             autoFocus
                         />
                     </div>
-                    <div className="form-check mb-3">
+                    <div className="form-check mb-3 d-flex align-items-center">
                         <input
-                            className="form-check-input"
+                            className="form-check-input me-2"
                             type="checkbox"
                             id="rebuttalToggle"
                             checked={user_rebuttal}
                             onChange={() => setUserRebuttal(!user_rebuttal)}
                         />
-                        <label className="form-check-label fw-bold text-danger" htmlFor="rebuttalToggle">
+                        <label className="form-check-label fw-bold text-danger mb-0" htmlFor="rebuttalToggle">
                             Rebuttal
                         </label>
                         {/* Info message for Rebuttal toggle */}
-                        <div style={adminStyles.infoMessage}>
+                        <div style={adminStyles.infoMessage} className="ms-2">
                             {user_rebuttal
                                 ? 'Rebuttal Included in {text}'
                                 : ''}

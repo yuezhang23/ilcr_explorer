@@ -4,7 +4,13 @@ export const adminStyles = {
   // Main container styles
   container: {
     backgroundColor: '#f8fafc',
-    minHeight: '100vh',
+    minHeight: 'calc(100vh - 80px)', // Account for Nav height
+    width: '100%',
+    maxWidth: '100%',
+    position: 'sticky' as const,
+    top: '80px', // Position below Nav component
+    zIndex: 999, // Below Nav's zIndex of 1000
+    paddingTop: '10px', // Add some spacing from Nav
   },
 
   // Pagination styles
@@ -78,7 +84,8 @@ export const adminStyles = {
     card: {
       borderRadius: '16px',
       overflow: 'hidden',
-      maxHeight: '600px'
+      display: 'flex',
+      flexDirection: 'column' as const
     },
     header: {
       background: 'linear-gradient(135deg,rgb(141, 141, 220) 0%,rgb(134, 97, 171) 100%)',
@@ -86,11 +93,14 @@ export const adminStyles = {
       fontWeight: '600',
       fontSize: '1.0rem',
       top: 0,
-      zIndex: 1000,
-      position: 'sticky' as const
+      zIndex: 10, // Lower than container zIndex
+      position: 'sticky' as const,
+      textAlign: 'center' as const,
+      // padding: '8px 16px'
     },
     headerRow: {
-      fontSize: '0.85rem'
+      fontSize: '0.85rem',
+      height: '50px'
     },
     sortButton: {
       fontSize: '0.95rem',
@@ -100,7 +110,8 @@ export const adminStyles = {
     },
     body: {
       overflowY: 'auto' as const,
-      maxHeight: '500px'
+      flex: 1,
+      minHeight: 0
     }
   },
 
@@ -797,4 +808,19 @@ export const getTooltipArrowStyle = (position: 'left' | 'right' | 'down') => {
     default:
       return adminStyles.tooltip.arrowRight;
   }
+};
+
+// Helper function for dynamic header height
+export const getHeaderStyle = (height?: string | number) => {
+  const baseStyle = adminStyles.table.header;
+  if (!height) return baseStyle;
+  
+  return {
+    ...baseStyle,
+    height: typeof height === 'number' ? `${height}px` : height,
+    minHeight: typeof height === 'number' ? `${height}px` : height,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
 }; 

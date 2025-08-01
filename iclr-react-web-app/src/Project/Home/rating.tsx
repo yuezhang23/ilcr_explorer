@@ -11,7 +11,8 @@ import {
     adminStyles, 
     getDropdownButtonStyle, 
     getDropdownMenuStyle, 
-    getTooltipArrowStyle 
+    getTooltipArrowStyle,
+    getHeaderStyle
 } from './styles/adminStyles';
 import './styles/admin.css';
 import RatingDistributionChart from './components/RatingDistributionChart';
@@ -257,18 +258,26 @@ function RatingHome() {
     }, [currentPrompt, handleDropdownOptionMouseEnter, handleDropdownOptionMouseLeave]);
 
     return (
-    <div style={adminStyles.container} className="p-4">
-        <div className="d-flex gap-4 m-2">
+    <div style={adminStyles.container} className="p-0">
+        <div className="d-flex gap-4 m-0">
             {/* Left Side Menu - Prompt Controls */}
             <div className="card border-0 shadow-lg" style={{
                 ...adminStyles.table.card, 
                 overflow: 'visible',
-                width: '300px',
-                minHeight: 'fit-content',
+                width: '350px',
+                height: 'fit-content',
                 // position: 'sticky',
                 // top: '20px'
             }}>
-                <div className="card-header border-0 py-3" style={adminStyles.table.header}>
+                <div className="card-header border-0 py-3" style={{
+                    ...adminStyles.table.header,
+                    height: '70px', // Add your desired height here
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderTopLeftRadius: '15px',
+                    borderTopRightRadius: '15px'
+                }}>
                     <h6 className="mb-0">Prompt Controls</h6>
                 </div>
                 <div className="card-body p-4" style={{ overflow: 'visible' }}>
@@ -348,14 +357,14 @@ function RatingHome() {
             </div>
             
             {/* Main Content Area */}
-            <div className="flex-grow-1">
+            <div className="flex-grow-1" style={{ minWidth: 0 }}>
                 {/* Rating Distribution Chart */}
                 {!isLoadingAllData && processedAllPapers.length > 0 && (
-                    <div className="card border-0 shadow-lg" style={{...adminStyles.table.card, maxHeight: 'none'}}>
+                    <div className="card border-0 shadow-lg" style={adminStyles.table.card}>
                         <div className="card-header border-0 py-3" style={adminStyles.table.header}>
                             <div className="d-flex justify-content-between align-items-center">
                                 <h6 className="mb-0">
-                                    {showPredictionErrors ? 'Prediction Errors' : 'Prediction Distribution'}
+                                    {showPredictionErrors ? 'Prediction Analysis' : 'Prediction Distribution'}
                                 </h6>
                                 <button
                                     className="btn btn-sm"
@@ -390,7 +399,7 @@ function RatingHome() {
                                     }}
                                 >
                                     <i className={`fas ${showPredictionErrors ? 'fa-chart-bar' : 'fa-exclamation-triangle'} me-1`}></i>
-                                    {showPredictionErrors ? 'Show Distribution' : 'Show Errors'}
+                                    {showPredictionErrors ? 'Distribution' : 'Analysis'}
                                 </button>
                             </div>
                         </div>

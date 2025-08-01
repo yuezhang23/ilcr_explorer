@@ -17,10 +17,10 @@ const leaderboardHeaderStyle = {
     color: 'white',
     fontWeight: '600',
     fontSize: '1rem',
-    padding: '16px 24px',
+    padding: '10px 20px',
     border: 'none',
     borderRadius: '12px 12px 0 0',
-    height: '100px',
+    height: '85px',
     boxShadow: '0 4px 20px rgba(102, 126, 234, 0.15)',
     position: 'relative' as const,
     overflow: 'hidden',
@@ -121,7 +121,8 @@ const Leaderboard: React.FC = () => {
                 borderRadius: '16px',
                 background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                maxHeight: '800px'
             }}>
                 <div className="card-header" style={leaderboardHeaderStyle}>
                     <h5 className="mb-0 d-flex align-items-center">
@@ -147,7 +148,8 @@ const Leaderboard: React.FC = () => {
                 borderRadius: '16px',
                 background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
                 display: 'flex',
-                flexDirection: 'column'
+                flexDirection: 'column',
+                maxHeight: '800px'
             }}>
                 <div className="card-header" style={leaderboardHeaderStyle}>
                     <h5 className="mb-0 d-flex align-items-center">
@@ -178,22 +180,23 @@ const Leaderboard: React.FC = () => {
             background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            maxHeight: '800px'
         }}>
             <div className="card-header" style={leaderboardHeaderStyle}>
                 <h5 className="mb-0 d-flex align-items-center">
-                    <FaTrophy className="me-3" style={{ fontSize: '1.2rem', transform: 'rotate(-15deg)', color: '#FFD700' }} />
-                    <span style={artisticTextStyle}>Top Rating</span>
+                    <FaTrophy className="me-3" style={{ fontSize: '2.5rem', transform: 'rotate(-15deg)', color: '#FFD700' }} />
+                    <span style={artisticTextStyle}>Top Ratings</span>
                 </h5>
             </div>
-            <div className="card-body p-0 flex-grow-1" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="card-body p-0" style={{ overflow: 'auto', maxHeight: 'calc(800px - 85px)' }}>
                 {topPapers.length === 0 ? (
                     <div className="text-center py-5">
                         <i className="fas fa-chart-line fa-3x text-muted mb-3" style={{ opacity: 0.5 }}></i>
                         <p className="text-muted fw-light">No papers available</p>
                     </div>
                 ) : (
-                    <div className="list-group list-group-flush flex-grow-1" style={{ overflow: 'auto', maxHeight: '100%' }}>
+                    <div className="list-group list-group-flush">
                         {topPapers.map((paper, index) => (
                             <div 
                                 key={paper._id} 
@@ -203,13 +206,14 @@ const Leaderboard: React.FC = () => {
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                     borderBottom: index < topPapers.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
                                     overflow: 'hidden',
-                                    position: 'relative'
+                                    position: 'relative',
+                                    minHeight: 'fit-content'
                                 }}
             
                             >
                                 <div className="d-flex align-items-start">
                                     <div className="flex-grow-1">
-                                        <div className="mb-2">
+                                        <div className="mb-2 ">
                                             {paper.url ? (
                                                 <a 
                                                     href={paper.url} 

@@ -16,9 +16,8 @@ function Nav() {
   const navStyles = {
     container: {
       background: 'linear-gradient(135deg, rgb(100, 100, 180) 0%, rgb(90, 65, 140) 100%)',
-      borderRadius: '16px',
       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-      margin: '0 20px 10px 20px',
+      margin: '0 0 10px 0',
       position: 'sticky' as const,
       top: 0,
       zIndex: 1000,
@@ -27,7 +26,6 @@ function Nav() {
     },
     logoContainer: {
       backgroundColor: 'rgba(255, 255, 255, 0.15)',
-      borderRadius: '12px',
       width: '50px',
       height: '50px',
       display: 'flex',
@@ -61,7 +59,6 @@ function Nav() {
       fontWeight: '500',
       fontSize: '0.95rem',
       padding: '8px 16px',
-      borderRadius: '8px',
       transition: 'all 0.3s ease',
       textDecoration: 'none',
       margin: '0 4px'
@@ -84,7 +81,6 @@ function Nav() {
       fontWeight: '500',
       fontSize: '0.95rem',
       padding: '8px 16px',
-      borderRadius: '8px',
       transition: 'all 0.3s ease',
       border: '1px solid rgba(239, 68, 68, 0.3)'
     },

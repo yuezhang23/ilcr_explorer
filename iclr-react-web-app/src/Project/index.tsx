@@ -18,7 +18,7 @@ export default function Project() {
   return (
     <Provider store={store}>
       <AuthProvider>
-        <div className='d-flex flex-column'>
+        <div className='d-flex flex-column' style={{ width: '100%', minHeight: '100vh' }}>
           <Nav />
           <Routes>
               <Route path="/" element={<Navigate to="Home" />} />

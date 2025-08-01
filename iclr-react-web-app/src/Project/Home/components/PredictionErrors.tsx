@@ -159,113 +159,138 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   const rebuttalErrorDetails = getErrorDetails(rebuttalErrors, true);
 
   // Confusion Matrix Component
-  const ConfusionMatrix = ({ matrix, title, metrics }: { matrix: any, title: string, metrics: any }) => (
-    <div className="col-md-6">
-      <div className="card border-0 shadow-sm h-100">
-        <div className="card-header bg-light border-0">
-          <h6 className="mb-0 fw-bold">{title}</h6>
-        </div>
-        <div className="card-body">
-          <div className="confusion-matrix">
-            <div className="table-responsive">
-              <table className="table table-sm mb-3" style={{ border: 'none' }}>
-                <thead>
-                  <tr>
-                    <th scope="col" style={{ border: 'none', background: 'transparent' }}></th>
-                    <th scope="col" className="text-center" style={{ 
-                      background: '#f8f9fa',
-                      color: '#495057',
-                      fontWeight: '600',
-                      border: 'none',
-                      fontSize: '0.85rem'
-                    }}>Accept</th>
-                    <th scope="col" className="text-center" style={{ 
-                      background: '#f8f9fa',
-                      color: '#495057',
-                      fontWeight: '600',
-                      border: 'none',
-                      fontSize: '0.85rem'
-                    }}>Reject</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th scope="row" className="text-center" style={{ 
-                      background: '#f8f9fa',
-                      color: '#495057',
-                      fontWeight: '600',
-                      border: 'none',
-                      fontSize: '0.85rem'
-                    }}>Accept</th>
-                    <td className="text-center fw-bold" style={{
-                      background: 'rgba(40, 167, 69, 0.08)',
-                      color: '#155724',
-                      border: 'none',
-                      fontSize: '0.9rem'
-                    }}>
-                      {matrix.truePositive}
-                    </td>
-                    <td className="text-center fw-bold" style={{
-                      background: 'rgba(220, 53, 69, 0.08)',
-                      color: '#721c24',
-                      border: 'none',
-                      fontSize: '0.9rem'
-                    }}>
-                      {matrix.falseNegative}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th scope="row" className="text-center" style={{ 
-                      background: '#f8f9fa',
-                      color: '#495057',
-                      fontWeight: '600',
-                      border: 'none',
-                      fontSize: '0.85rem'
-                    }}>Reject</th>
-                    <td className="text-center fw-bold" style={{
-                      background: 'rgba(220, 53, 69, 0.08)',
-                      color: '#721c24',
-                      border: 'none',
-                      fontSize: '0.9rem'
-                    }}>
-                      {matrix.falsePositive}
-                    </td>
-                    <td className="text-center fw-bold" style={{
-                      background: 'rgba(40, 167, 69, 0.08)',
-                      color: '#155724',
-                      border: 'none',
-                      fontSize: '0.9rem'
-                    }}>
-                      {matrix.trueNegative}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+  const ConfusionMatrix = ({ matrix, title, metrics }: { matrix: any, title: string, metrics: any }) => {
+    // Calculate max value for normalization
+    const maxValue = Math.max(matrix.truePositive, matrix.trueNegative, matrix.falsePositive, matrix.falseNegative);
+    
+    // Function to calculate background opacity based on cell value
+    const getBackgroundOpacity = (value: number) => {
+      if (maxValue === 0) return 0.1;
+      return 0.1 + (value / maxValue) * 0.6; // Range from 0.1 to 0.7
+    };
+
+    return (
+      <div className="col-md-6">
+        <div className="card border-0 shadow-sm h-100">
+          <div className="card-header border-0 mt-2" style={{
+            backgroundColor: 'rgba(242, 242, 242, 0.81)',
+            color: 'black',
+          }}>
+            <h6 className="mb-0 fw-bold">{title}</h6>
+          </div>
+          <div className="card-body">
+            <div className="confusion-matrix">
+              <div className="table-responsive">
+                <table className="table table-sm mb-3" style={{ border: 'none' }}>
+                  <thead>
+                    <tr>
+                      <th scope="col" style={{ border: 'none', background: 'transparent' }}></th>
+                      <th scope="col" className="text-center" style={{ 
+                        background: '#f8f9fa',
+                        color: '#495057',
+                        fontWeight: '600',
+                        border: 'none',
+                        fontSize: '0.85rem'
+                      }}>Accept</th>
+                      <th scope="col" className="text-center" style={{ 
+                        background: '#f8f9fa',
+                        color: '#495057',
+                        fontWeight: '600',
+                        border: 'none',
+                        fontSize: '0.85rem'
+                      }}>Reject</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <th scope="row" className="text-center" style={{ 
+                        background: '#f8f9fa',
+                        color: '#495057',
+                        fontWeight: '600',
+                        border: 'none',
+                        fontSize: '0.85rem'
+                      }}>Accept</th>
+                      <td className="text-center fw-bold" style={{
+                        background: `rgba(0, 123, 255, ${getBackgroundOpacity(matrix.truePositive)})`,
+                        color: 'black',
+                        border: 'none',
+                        fontSize: '0.9rem'
+                      }}>
+                        {matrix.truePositive}
+                      </td>
+                      <td className="text-center fw-bold" style={{
+                        background: `rgba(0, 123, 255, ${getBackgroundOpacity(matrix.falseNegative)})`,
+                        color: 'black',
+                        border: 'none',
+                        fontSize: '0.9rem'
+                      }}>
+                        {matrix.falseNegative}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row" className="text-center" style={{ 
+                        background: '#f8f9fa',
+                        color: '#495057',
+                        fontWeight: '600',
+                        border: 'none',
+                        fontSize: '0.85rem'
+                      }}>Reject</th>
+                      <td className="text-center fw-bold" style={{
+                        background: `rgba(0, 123, 255, ${getBackgroundOpacity(matrix.falsePositive)})`,
+                        color: 'black',
+                        border: 'none',
+                        fontSize: '0.9rem'
+                      }}>
+                        {matrix.falsePositive}
+                      </td>
+                      <td className="text-center fw-bold" style={{
+                        background: `rgba(0, 123, 255, ${getBackgroundOpacity(matrix.trueNegative)})`,
+                        color: 'black',
+                        border: 'none',
+                        fontSize: '0.9rem'
+                      }}>
+                        {matrix.trueNegative}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             
             {/* Metrics */}
-            <div className="row text-center m-2">
+            <div className="row text-center mt-4">
               <div className="col-3">
                 <div className="border-end">
-                  <div className="h5" style={{ color: '#495057' }}>{metrics.accuracy}%</div>
+                  <div className="h5" style={{ 
+                    color: parseFloat(metrics.accuracy) > 70 ? '#dc3545' : '#495057',
+                    fontWeight: 'normal'
+                  }}>{metrics.accuracy}%</div>
                   <div className="small text-muted">Accuracy</div>
                 </div>
               </div>
               <div className="col-3">
                 <div className="border-end">
-                  <div className="h5" style={{ color: '#495057' }}>{metrics.precision}%</div>
+                  <div className="h5" style={{ 
+                    color: parseFloat(metrics.precision) > 70 ? '#dc3545' : '#495057',
+                    fontWeight: 'normal'
+                  }}>{metrics.precision}%</div>
                   <div className="small text-muted">Precision</div>
                 </div>
               </div>
               <div className="col-3">
                 <div className="border-end">
-                  <div className="h5" style={{ color: '#495057' }}>{metrics.recall}%</div>
+                  <div className="h5" style={{ 
+                    color: parseFloat(metrics.recall) > 70 ? '#dc3545' : '#495057',
+                    fontWeight: 'normal'
+                  }}>{metrics.recall}%</div>
                   <div className="small text-muted">Recall</div>
                 </div>
               </div>
               <div className="col-3">
                 <div>
-                  <div className="h5" style={{ color: '#495057' }}>{metrics.f1Score}</div>
+                  <div className="h5" style={{ 
+                    color: parseFloat(metrics.f1Score) > 70 ? '#dc3545' : '#495057',
+                    fontWeight: 'normal'
+                  }}>{metrics.f1Score}</div>
                   <div className="small text-muted">F1 Score</div>
                 </div>
               </div>
@@ -279,6 +304,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
       </div>
     </div>
   );
+  };
 
   return (
     <div className="prediction-errors">
@@ -329,7 +355,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                   <h6 className="mb-0 d-flex justify-content-between align-items-center fw-bold" style={{ color: '#495057' }}>
                     <span>
                       <i className="fas fa-exclamation-triangle me-2" style={{ color: '#f39c12' }}></i>
-                      Non-Rebuttal Prediction ({nonRebuttalErrors.length})
+                      Non-Rebuttal Mismatch - {nonRebuttalErrors.length}
                     </span>
                     <i className={`fas fa-chevron-${showNonRebuttal ? 'up' : 'down'}`} style={{ color: '#6c757d', transition: 'transform 0.2s ease-in-out' }}></i>
                   </h6>
@@ -375,8 +401,14 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                                     {error.decision}
                                   </span>
                                 </td>
-                                <td className="text-center">{error.rating.toFixed(2)}</td>
-                                <td className="text-center">{error.confidence.toFixed(2)}</td>
+                                <td className="text-center" style={{ 
+                                  color: error.rating > 75 ? '#dc3545' : '#495057',
+                                  fontWeight: 'normal'
+                                }}>{error.rating.toFixed(2)}</td>
+                                <td className="text-center" style={{ 
+                                  color: error.confidence > 75 ? '#dc3545' : '#495057',
+                                  fontWeight: 'normal'
+                                }}>{error.confidence.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -408,7 +440,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                   <h6 className="mb-0 d-flex justify-content-between align-items-center fw-bold">
                     <span>
                       <i className="fas fa-exclamation-triangle me-2" style={{ color: '#e74c3c' }}></i>
-                      Rebuttal Prediction Errors : #{rebuttalErrors.length}
+                      Rebuttal Mismatch - {rebuttalErrors.length}
                     </span>
                     <i className={`fas fa-chevron-${showRebuttal ? 'up' : 'down'}`} style={{ color: '#6c757d' }}></i>
                   </h6>
@@ -454,8 +486,14 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                                     {error.decision}
                                   </span>
                                 </td>
-                                <td className="text-center">{error.rating.toFixed(2)}</td>
-                                <td className="text-center">{error.confidence.toFixed(2)}</td>
+                                <td className="text-center" style={{ 
+                                  color: error.rating > 75 ? '#dc3545' : '#495057',
+                                  fontWeight: 'normal'
+                                }}>{error.rating.toFixed(2)}</td>
+                                <td className="text-center" style={{ 
+                                  color: error.confidence > 75 ? '#dc3545' : '#495057',
+                                  fontWeight: 'normal'
+                                }}>{error.confidence.toFixed(2)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -479,53 +517,40 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
       {!showNonRebuttal && !showRebuttal && (
         <div className="row mt-3">
           <div className="col-12">
-            <div className="d-flex gap-2">
+            <div className="d-flex gap-2 justify-content-around">
               <button 
-                className="btn flex-fill"
+                className="btn"
                 style={{ 
-                  // very light purple
-                  backgroundColor: '#f3f0ff',
+                  // very light orange
+                  backgroundColor: 'rgba(37, 118, 224, 0.81)',
                   borderColor: '#ced4da',
-                  color: '#212529',
                   fontWeight: '500',
                   borderWidth: '1px',
-                  transition: 'all 0.2s ease-in-out'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#dee2e6';
-                  e.currentTarget.style.borderColor = '#adb5bd';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e9ecef';
-                  e.currentTarget.style.borderColor = '#ced4da';
+                  transition: 'all 0.2s ease-in-out',
+                  borderRadius: '10px',
+                  color: 'white'
                 }}
                 onClick={() => setShowNonRebuttal(true)}
               >
                 <i className="fas fa-exclamation-triangle me-2" style={{ color: '#6c757d' }}></i>
-                Non-Rebuttal Errors ({nonRebuttalErrors.length})
+                Non-Rebuttal Mismatch 
               </button>
               <button 
-                className="btn flex-fill"
+                className="btn"
                 style={{ 
-                  backgroundColor: '#f3f0ff', 
+                  // very light orange
+                  backgroundColor: 'rgba(10, 102, 221, 0.81)',
                   borderColor: '#ced4da',
-                  color: '#212529',
                   fontWeight: '500',
                   borderWidth: '1px',
-                  transition: 'all 0.2s ease-in-out'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#dee2e6';
-                  e.currentTarget.style.borderColor = '#adb5bd';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#e9ecef';
-                  e.currentTarget.style.borderColor = '#ced4da';
+                  transition: 'all 0.2s ease-in-out',
+                  borderRadius: '10px',
+                  color: 'white'
                 }}
                 onClick={() => setShowRebuttal(true)}
               >
                 <i className="fas fa-exclamation-triangle me-2" style={{ color: '#6c757d' }}></i>
-                Rebuttal Errors ({rebuttalErrors.length})
+                Rebuttal Mismatch 
               </button>
             </div>
           </div>

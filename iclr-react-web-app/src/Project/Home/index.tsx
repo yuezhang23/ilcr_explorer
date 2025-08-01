@@ -41,7 +41,7 @@ function Home() {
  
 
   return (               
-      <div className="d-flex flex-grow-1">
+      <div className="d-flex flex-grow-1 mx-4">
           <Routes>
               <Route path="/" element={<Navigate to="Guest"/>} />
               {/* <Route path="Guest" element={<GuestHome/>} /> */}
