@@ -23,6 +23,7 @@ import {
     getTooltipArrowStyle
 } from './styles/adminStyles';
 import './styles/admin.css';
+import Leaderboard from './components/Leaderboard';
 axios.defaults.withCredentials = true;
 
 // Helper function to process papers data
@@ -314,13 +315,7 @@ const PaperRow = React.memo(({
             onMouseEnter={handleRowMouseEnter}
             onMouseLeave={handleRowMouseLeave}
         >
-            <div className="row align-items-center">
-                {/* <div className="col-1 text-center">
-                    <span className="badge rounded-pill px-3 py-2" 
-                          style={adminStyles.badge.conference}>
-                        {currentIclrName}
-                    </span>
-                </div> */}
+            <div className="row align-items-center text-center">
                 <div className="col-3">
                     <div className='text-center d-block mb-2'>
                         {paper.url ? (
@@ -363,7 +358,7 @@ const PaperRow = React.memo(({
                         </div>
                     )}
                 </div>
-                <div className='col-2 text-center'>
+                <div className='col-2'>
                     <div className='w-100'>
                         <ul className='list-unstyled mb-0' style={isAuthorsExpanded ? adminStyles.authors.listExpanded : adminStyles.authors.list}>
                             {paper.authors.map((author: string, idx: number) => (
@@ -393,12 +388,12 @@ const PaperRow = React.memo(({
                         )}
                     </div>
                 </div>
-                <div className="col-1 text-center">
+                <div className="col-1">
                     <div className="fw-bold" style={getRatingColor(paper.rating)}>
                         {paper.rating}
                     </div>
                 </div>
-                <div className='col-1 text-center'>
+                <div className='col-1'>
                     <div className='w-100'>
                         <ul className='list-unstyled mb-0'>
                             {paper.ratings.map((rating: number, idx: number) => (
@@ -409,18 +404,18 @@ const PaperRow = React.memo(({
                         </ul>
                     </div>
                 </div>
-                <div className='col-1 text-center'>
+                <div className='col-2'>
                     <div className="fw-bold" style={getConfidenceColor(paper.confidence)}>
                         {paper.confidence}
                     </div>
                 </div>
-                <div className='col-2 text-center'>
+                <div className='col-2'>
                     <span className="badge rounded-pill px-3 py-2" 
                           style={{ ...getDecisionColors(paper.decision), ...adminStyles.badge.decision }}>
                         {paper.decision}
                     </span>
                 </div>
-                <div className='col-2 text-center'>
+                <div className='col-1'>
                     <div className="text-muted" style={adminStyles.prediction.container}>
                         <button 
                             className="btn btn-sm rounded-pill" 
@@ -648,21 +643,40 @@ function AdminHome() {
 
     return (
     <div style={adminStyles.container}>
-        <div className='px-5 py-2 d-flex justify-content-center align-items-center' > 
-            <div className="d-flex me-5 flex-column position-relative conference-dropdown-container">
+        <div className='px-5 py-2 d-flex justify-content-between align-items-center' > 
+            <div className="d-flex ms-5 align-items-center position-relative conference-dropdown-container">
+                <label className="me-2 fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
+                    ICLR
+                </label>
                 <button 
-                    className="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                    className="btn btn-sm dropdown-toggle" 
                     onClick={() => setConferenceDropdownOpen(!conferenceDropdownOpen)}
-                    style={getDropdownButtonStyle(false)}
+                    style={{
+                        // border: '3px solid #3b82f6',
+                        borderRadius: '8px',
+                        padding: '6px 12px',
+                        color: '#1e40af',
+                        backgroundColor: '#dbeafe',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
+                        boxShadow: '0 2px 4px rgba(59, 130, 246, 0.1)',
+                        fontSize: '0.9rem',
+                        minWidth: '80px'
+                    }}
                     onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f8fafc';
+                        e.currentTarget.style.backgroundColor = '#bfdbfe';
+                        e.currentTarget.style.borderColor = '#2563eb';
+                        e.currentTarget.style.color = '#1e3a8a';
                         e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.2)';
                     }}
                     onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#fff';
+                        e.currentTarget.style.backgroundColor = '#dbeafe';
+                        e.currentTarget.style.borderColor = '#3b82f6';
+                        e.currentTarget.style.color = '#1e40af';
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.1)';
                     }}
                 >
                     {currentYear}
@@ -718,171 +732,205 @@ function AdminHome() {
                 <div className="d-flex align-items-center">
                     <Link
                         to="/Home/Analytics"
-                        className="btn mx-2 py-2 border-0 btn-outline-secondary text-dark"
-                        style={adminStyles.clickableLink}
+                        className="btn btn-sm mx-2"
+                        style={{
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            color: '#1e40af',
+                            backgroundColor: '#dbeafe',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
+                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.1)',
+                            fontSize: '0.9rem',
+                            minWidth: '80px',
+                            textDecoration: 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#bfdbfe';
+                            e.currentTarget.style.color = '#1e3a8a';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#dbeafe';
+                            e.currentTarget.style.color = '#1e40af';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.1)';
+                        }}
                         >
                         Analytics
                     </Link>
                 </div>
             </div>
         </div>
-                
-        <div className="mx-4">
-            <div className="card border-0 shadow-lg" style={adminStyles.table.card}> 
-                <div className="card-header border-0 " 
-                     style={adminStyles.table.header}>
-                    <div className="row align-items-center text-center me-2" style={adminStyles.table.headerRow}>
-                        <div className="col-3">
-                            Paper Title
+        <div className='d-flex px-5' style={{ minHeight: 'calc(100vh - 200px)' }}>
+            <div className='col-2 d-none d-lg-block me-3 d-flex flex-column'>
+                <Leaderboard />
+            </div> 
+            <div className='col-10 flex-grow-1 d-flex flex-column'>
+                <div className="mx-2 flex-grow-1 d-flex flex-column">
+                    <div className="card border-0 shadow-lg flex-grow-1 d-flex flex-column" style={adminStyles.table.card}> 
+                        <div className="card-header border-0 " 
+                            style={adminStyles.table.header}>
+                            <div className="row align-items-center text-center" style={adminStyles.table.headerRow}>
+                                <div className="col-3">
+                                    Paper Title
+                                </div>
+                                <div className='col-2'>
+                                    Authors
+                                </div>
+                                <div className="col-1">
+                                    Rating
+                                </div>
+                                <div className='col-1'>
+                                    Ratings
+                                </div>
+                                <div className='col-2'> 
+                                    Confidence 
+                                </div>
+                                <div className='col-2'>
+                                    Decision
+                                </div>
+                                <div className='col-1'>
+                                    <div className="d-flex flex-column align-items-center justify-content-center h-100">
+                                        <div className="position-relative mb-2">
+                                            <button 
+                                                className="btn btn-sm dropdown-toggle rounded-5 fw-bold fs-8" 
+                                                onClick={() => setDropdownOpen(!dropdownOpen)}
+                                                disabled={isLoadingPredictions}
+                                                style={{
+                                                    backgroundColor: '#f8f9fa',
+                                                    border: '1px solid #dee2e6',
+                                                    color: '#495057',
+                                                    transition: 'all 0.2s ease',
+                                                    ...(isLoadingPredictions && { opacity: 0.6 })
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (!isLoadingPredictions) {
+                                                        e.currentTarget.style.backgroundColor = '#e9ecef';
+                                                        e.currentTarget.style.transform = 'translateY(-1px)';
+                                                    }
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (!isLoadingPredictions) {
+                                                        e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                                        e.currentTarget.style.transform = 'translateY(0)';
+                                                    }
+                                                }}
+                                            >
+                                                {isLoadingPredictions ? (
+                                                    <>
+                                                        <div className="spinner-border spinner-border-sm me-1" role="status">
+                                                            <span className="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        Loading...
+                                                    </>
+                                                ) : (
+                                                    `Prompt ${home.PROMPT_CANDIDATES.findIndex(p => p === currentPrompt) + 1}`
+                                                )}
+                                            </button>                    
+                                            {dropdownOpen && (
+                                                <div 
+                                                    className="dropdown-menu show position-absolute"
+                                                    style={getDropdownMenuStyle(true)}
+                                                >
+                                                    {home.PROMPT_CANDIDATES.map((prompt, index) => (
+                                                        <button
+                                                            key={index}
+                                                            className={`dropdown-item ${currentPrompt === prompt ? 'active' : ''}`}
+                                                            onClick={() => {
+                                                                setCurrentPrompt(prompt);
+                                                                setDropdownOpen(false);
+                                                                setDropdownTooltipVisible(false); // Hide tooltip when option is clicked
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                handleDropdownOptionMouseEnter(e, prompt);
+                                                                if (currentPrompt !== prompt) {
+                                                                    Object.assign(e.currentTarget.style, adminStyles.dropdown.itemHover);
+                                                                }
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                handleDropdownOptionMouseLeave();
+                                                                if (currentPrompt !== prompt) {
+                                                                    Object.assign(e.currentTarget.style, adminStyles.dropdown.item);
+                                                                }
+                                                            }}
+                                                            style={currentPrompt === prompt ? adminStyles.dropdown.itemActive : adminStyles.dropdown.item}
+                                                        >
+                                                            Prompt {index + 1}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="form-check form-switch">
+                                            <input
+                                                className="form-check-input"
+                                                type="checkbox"
+                                                id="rebuttalSwitch"
+                                                checked={pub_rebuttal}
+                                                onChange={() => {
+                                                    setPubRebuttal(!pub_rebuttal);
+                                                }}
+                                                style={adminStyles.form.switch}
+                                            />
+                                            <label className={pub_rebuttal ? "form-check-label text-primary" : "form-check-label text-white"} htmlFor="rebuttalSwitch" style={adminStyles.form.switchLabel}>
+                                                <b>Rebuttal</b>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
                         </div>
-                        <div className='col-2'>
-                            Authors
-                        </div>
-                        <div className="col-1">
-                            Rating
-                        </div>
-                        <div className='col-1'>
-                            Ratings
-                        </div>
-                        <div className='col-1'> 
-                            Confidence 
-                        </div>
-                        <div className='col-2'>Decision</div>
-                    <div className='col-1'>
-                        <div className="d-flex flex-column align-items-center position-relative">
-                        <button 
-                            className="btn btn-sm btn-outline-secondary dropdown-toggle" 
-                            onClick={() => setDropdownOpen(!dropdownOpen)}
-                            style={getDropdownButtonStyle(isLoadingPredictions)}
-                            disabled={isLoadingPredictions}
-                            onMouseEnter={(e) => {
-                                if (!isLoadingPredictions) {
-                                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                                    e.currentTarget.style.transform = 'translateY(-1px)';
-                                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (!isLoadingPredictions) {
-                                    e.currentTarget.style.backgroundColor = '#fff';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
-                                }
-                            }}
-                        >
-                            {isLoadingPredictions ? (
-                                <>
-                                    <div className="spinner-border spinner-border-sm me-1" role="status">
+                        <>
+                        {/* {JSON.stringify(currentPreds)} */}
+                        </>
+                        <div className="card-body p-0 flex-grow-1"
+                            style={adminStyles.table.body}>
+                            {isLoadingData && (
+                                <div className="text-center py-5" style={adminStyles.loadingState.container}>
+                                    <div className="spinner-border text-primary" role="status">
                                         <span className="visually-hidden">Loading...</span>
                                     </div>
-                                    Loading...
-                                </>
-                            ) : (
-                                `Prompt ${home.PROMPT_CANDIDATES.findIndex(p => p === currentPrompt) + 1}`
-                            )}
-                        </button>                    
-                            {dropdownOpen && (
-                                <div 
-                                    className="dropdown-menu show position-absolute"
-                                    style={getDropdownMenuStyle(true)}
-                                >
-                                    {home.PROMPT_CANDIDATES.map((prompt, index) => (
-                                        <button
-                                            key={index}
-                                            className={`dropdown-item ${currentPrompt === prompt ? 'active' : ''}`}
-                                            onClick={() => {
-                                                setCurrentPrompt(prompt);
-                                                setDropdownOpen(false);
-                                                setDropdownTooltipVisible(false); // Hide tooltip when option is clicked
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                handleDropdownOptionMouseEnter(e, prompt);
-                                                if (currentPrompt !== prompt) {
-                                                    Object.assign(e.currentTarget.style, adminStyles.dropdown.itemHover);
-                                                }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                handleDropdownOptionMouseLeave();
-                                                if (currentPrompt !== prompt) {
-                                                    Object.assign(e.currentTarget.style, adminStyles.dropdown.item);
-                                                }
-                                            }}
-                                            style={currentPrompt === prompt ? adminStyles.dropdown.itemActive : adminStyles.dropdown.item}
-                                        >
-                                            Prompt {index + 1}
-                                        </button>
-                                    ))}
+                                    <p>Loading papers...</p>
                                 </div>
                             )}
-                        </div>
-                        </div>
-                    <div className='col-1'>
-                        <div className="d-flex flex-column align-items-center mt-2">
-                            <div className="form-check form-switch">
-                                <input
-                                    className="form-check-input"
-                                    type="checkbox"
-                                    id="rebuttalSwitch"
-                                    checked={pub_rebuttal}
-                                    onChange={() => {
-                                        setPubRebuttal(!pub_rebuttal);
-                                    }}
-                                    style={adminStyles.form.switch}
+                            {!isLoadingData && currentRecords.length === 0 && searchTerm && (
+                                <div className="text-center py-5" style={adminStyles.emptyState.container}>
+                                    <i className="fas fa-search" style={adminStyles.emptyState.icon}></i>
+                                    <h5>No papers found</h5>
+                                    <p>No papers match "{searchTerm}"</p>
+                                </div>
+                            )}
+                            {!isLoadingData && currentRecords.length === 0 && !searchTerm && (
+                                <div className="text-center py-5" style={adminStyles.emptyState.container}>
+                                    <i className="fas fa-inbox" style={adminStyles.emptyState.icon}></i>
+                                    <h5>No papers available</h5>
+                                    <p>There are no papers to display</p>
+                                </div>
+                            )}
+                            {!isLoadingData && currentRecords.length > 0 && currentRecords.map((br: any, index : number) => 
+                                <PaperRow
+                                    key={br._id || index}
+                                    paper={br}
+                                    index={index}
+                                    currentIclrName={currentIclrName}
+                                    predictionsMap={predictionsMap}
+                                    expandedAbstracts={expandedAbstracts}
+                                    expandedAuthors={expandedAuthors}
+                                    toggleAbstract={toggleAbstract}
+                                    toggleAuthors={toggleAuthors}
+                                    setOpenModalPaper={setOpenModalPaper}
+                                    handleDropdownOptionMouseEnter={handleDropdownOptionMouseEnter}
+                                    handleDropdownOptionMouseLeave={handleDropdownOptionMouseLeave}
+                                    currentPrompt={currentPrompt}
                                 />
-                                <label className={pub_rebuttal ? "form-check-label text-primary" : "form-check-label text-white"} htmlFor="rebuttalSwitch" style={adminStyles.form.switchLabel}>
-                                    <b>Rebuttal</b>
-                                </label>
-                            </div>
+                            )}  
                         </div>
-                    </div>
-                    </div>
+                    </div>  
                 </div>
-                <>
-                {/* {JSON.stringify(currentPreds)} */}
-                </>
-                <div className="card-body p-0"
-                     style={adminStyles.table.body}>
-                    {isLoadingData && (
-                        <div className="text-center py-5" style={adminStyles.loadingState.container}>
-                            <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
-                            </div>
-                            <p>Loading papers...</p>
-                        </div>
-                    )}
-                    {!isLoadingData && currentRecords.length === 0 && searchTerm && (
-                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
-                            <i className="fas fa-search" style={adminStyles.emptyState.icon}></i>
-                            <h5>No papers found</h5>
-                            <p>No papers match "{searchTerm}"</p>
-                        </div>
-                    )}
-                    {!isLoadingData && currentRecords.length === 0 && !searchTerm && (
-                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
-                            <i className="fas fa-inbox" style={adminStyles.emptyState.icon}></i>
-                            <h5>No papers available</h5>
-                            <p>There are no papers to display</p>
-                        </div>
-                    )}
-                    {!isLoadingData && currentRecords.length > 0 && currentRecords.map((br: any, index : number) => 
-                        <PaperRow
-                            key={br._id || index}
-                            paper={br}
-                            index={index}
-                            currentIclrName={currentIclrName}
-                            predictionsMap={predictionsMap}
-                            expandedAbstracts={expandedAbstracts}
-                            expandedAuthors={expandedAuthors}
-                            toggleAbstract={toggleAbstract}
-                            toggleAuthors={toggleAuthors}
-                            setOpenModalPaper={setOpenModalPaper}
-                            handleDropdownOptionMouseEnter={handleDropdownOptionMouseEnter}
-                            handleDropdownOptionMouseLeave={handleDropdownOptionMouseLeave}
-                            currentPrompt={currentPrompt}
-                        />
-                    )}  
-                </div>
-            </div>  
+            </div>
         </div>
 
         {/* Modal for prompt input - rendered outside table structure */}

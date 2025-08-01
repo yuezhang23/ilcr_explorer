@@ -5,7 +5,7 @@ import { ProjectState } from '../store';
 import * as home from './home';
 import axios from "axios";
 import { setIclr, setIclrName } from '../Reducers/iclrReducer';
-import { setCurrentPreds } from '../Reducers/predictionReducer';
+import { setCurrentPreds, setRebuttalPreds, setNonRebuttalPreds } from '../Reducers/predictionReducer';
 import { useYear } from '../../contexts/YearContext';
 import { 
     adminStyles, 
@@ -15,6 +15,7 @@ import {
 } from './styles/adminStyles';
 import './styles/admin.css';
 import RatingDistributionChart from './components/RatingDistributionChart';
+import PredictionErrors from './components/PredictionErrors';
 import YearSelector from '../../components/YearSelector';
 axios.defaults.withCredentials = true;
 
@@ -25,6 +26,7 @@ function processPapersData(data: any[]) {
         const {metareviews, ...bib} = m;
         const ratings = [];
         const confidences = [];
+        const decisions = [];
 
         for (const o of metareviews) {
             if (o.values && o.values.rating) {
@@ -39,6 +41,12 @@ function processPapersData(data: any[]) {
                     confidences.push(confidenceValue);
                 }
             }
+            if (o.values && o.values.decision) {
+                const decisionValue = o.values.decision.toLowerCase() === 'no' || o.values.decision.toLowerCase() === 'reject' ? 'Reject' : 'Accept';
+                if (decisionValue) {
+                    decisions.push(decisionValue);
+                }
+            }
         }
         
         const rating = ratings.length > 0 ? parseFloat((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)) : 0;
@@ -49,14 +57,15 @@ function processPapersData(data: any[]) {
             rating,
             confidence,
             ratings,
-            confidences
+            confidences,
+            decisions
         };
     });
 }
 
 function RatingHome() {
     const {currentIclrName} = useSelector((state: ProjectState) => state.iclrReducer)
-    const {currentPreds} = useSelector((state: ProjectState) => state.predictionReducer)
+    const {currentPreds, rebuttalPreds, nonRebuttalPreds} = useSelector((state: ProjectState) => state.predictionReducer)
     const dispatch = useDispatch();
     
     // Use global year context instead of local state
@@ -78,6 +87,9 @@ function RatingHome() {
     const [dropdownTooltipContent, setDropdownTooltipContent] = useState<string>("");
     const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
     
+    // State for view toggle
+    const [showPredictionErrors, setShowPredictionErrors] = useState<boolean>(false);
+    
     // Memoize expensive computations
     const processedAllPapers = useMemo(() => processPapersData(allPapers), [allPapers]);
     
@@ -91,6 +103,28 @@ function RatingHome() {
         }
         return map;
     }, [currentPreds]);
+    
+    // Memoize rebuttal prediction lookup
+    const rebuttalPredictionsMap = useMemo(() => {
+        const map = new Map();
+        if (rebuttalPreds) {
+            rebuttalPreds.forEach(pred => {
+                map.set(pred.paper_id, pred.prediction);
+            });
+        }
+        return map;
+    }, [rebuttalPreds]);
+    
+    // Memoize non-rebuttal prediction lookup
+    const nonRebuttalPredictionsMap = useMemo(() => {
+        const map = new Map();
+        if (nonRebuttalPreds) {
+            nonRebuttalPreds.forEach(pred => {
+                map.set(pred.paper_id, pred.prediction);
+            });
+        }
+        return map;
+    }, [nonRebuttalPreds]);
 
     // Memoize prompt index to avoid recalculating on every render
     const currentPromptIndex = useMemo(() => {
@@ -116,16 +150,32 @@ function RatingHome() {
     const fetchPredictionsForAllPapers = useCallback(async (papers: any[], prompt: string, rebuttal: boolean) => {
         setIsLoadingPredictions(true);
         try {
-            const newPredictions = await home.getPredsByPromptAndRebuttal(prompt, rebuttal ? 1 : 0);
-            const processedPredictions = newPredictions.map((p: any) => ({
+            // Always fetch both rebuttal and non-rebuttal predictions
+            const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([
+                home.getPredsByPromptAndRebuttal(prompt, 1), // With rebuttal
+                home.getPredsByPromptAndRebuttal(prompt, 0)  // Without rebuttal
+            ]);
+            
+            const processPredictions = (predictions: any[]) => predictions.map((p: any) => ({
                 ...p,
                 prediction: p.prediction.toLowerCase() === 'yes' || p.prediction.toLowerCase() === 'accept' ? "Accept" 
                     : p.prediction.toLowerCase() === 'no' || p.prediction.toLowerCase() === 'reject' ? "Reject" : "O"
             }));
-            const acceptCount = processedPredictions.filter(p => p.prediction === 'Accept').length;
-            const rejectCount = processedPredictions.filter(p => p.prediction === 'Reject').length;
+            
+            const processedRebuttalPreds = processPredictions(rebuttalPredictions);
+            const processedNonRebuttalPreds = processPredictions(nonRebuttalPredictions);
+            
+            // Store both sets of predictions
+            dispatch(setRebuttalPreds(processedRebuttalPreds));
+            dispatch(setNonRebuttalPreds(processedNonRebuttalPreds));
+            
+            // Set current predictions based on the rebuttal toggle
+            const currentPredictions = rebuttal ? processedRebuttalPreds : processedNonRebuttalPreds;
+            dispatch(setCurrentPreds(currentPredictions));
+            
+            const acceptCount = currentPredictions.filter(p => p.prediction === 'Accept').length;
+            const rejectCount = currentPredictions.filter(p => p.prediction === 'Reject').length;
             console.log(`Processed predictions - Accept: ${acceptCount}, Reject: ${rejectCount}`);
-            dispatch(setCurrentPreds(processedPredictions));
         } catch (error) {
             console.error('Error fetching predictions:', error);
         } finally {
@@ -138,12 +188,20 @@ function RatingHome() {
         fetchAllData();
     }, [fetchAllData]);
 
-    // Effect to fetch predictions when all papers change or prompt/rebuttal changes
+    // Effect to fetch predictions when all papers change or prompt changes
     useEffect(() => {
         if (allPapers.length > 0) {
             fetchPredictionsForAllPapers(allPapers, currentPrompt, pub_rebuttal);
         }
-    }, [allPapers, currentPrompt, pub_rebuttal, fetchPredictionsForAllPapers]);
+    }, [allPapers, currentPrompt, fetchPredictionsForAllPapers]);
+    
+    // Effect to switch between rebuttal and non-rebuttal predictions when toggle changes
+    useEffect(() => {
+        if (rebuttalPreds.length > 0 && nonRebuttalPreds.length > 0) {
+            const currentPredictions = pub_rebuttal ? rebuttalPreds : nonRebuttalPreds;
+            dispatch(setCurrentPreds(currentPredictions));
+        }
+    }, [pub_rebuttal, rebuttalPreds, nonRebuttalPreds, dispatch]);
     
     // Add click outside handler for dropdown
     useEffect(() => {
@@ -284,40 +342,7 @@ function RatingHome() {
                             </div>
 
                         </div>
-                        <div className="w-100">
-                            <div className="d-flex flex-column">
-                                <div className="form-check form-switch">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        id="rebuttalSwitch"
-                                        checked={pub_rebuttal}
-                                        onChange={() => {
-                                            setPubRebuttal(!pub_rebuttal);
-                                        }}
-                                        style={{ cursor: 'pointer' }}
-                                    />
-                                    <label className="form-check-label" htmlFor="rebuttalSwitch" style={{ fontSize: '0.9rem' }}>
-                                        <b>Include Rebuttal</b>
-                                    </label>
-                                </div>
-                            </div>
-                            <div className="d-flex flex-column">
-                                <label className="form-label mb-2" style={{ fontSize: '0.9rem', fontWeight: '600' }}>
-                                    Field:
-                                </label>
-                                <select
-                                    className="form-select form-select-sm"
-                                    value={field}
-                                    onChange={(e) => setField(e.target.value)}
-                                    style={{ fontSize: '0.9rem' }}
-                                >
-                                    <option value="rating">Rating</option>
-                                    <option value="confidence">Confidence</option>
-                                </select>
-                            </div>
 
-                        </div>
                     </div>
                 </div>
             </div>
@@ -326,11 +351,48 @@ function RatingHome() {
             <div className="flex-grow-1">
                 {/* Rating Distribution Chart */}
                 {!isLoadingAllData && processedAllPapers.length > 0 && (
-                    <div className="card border-0 shadow-lg" style={adminStyles.table.card}>
+                    <div className="card border-0 shadow-lg" style={{...adminStyles.table.card, maxHeight: 'none'}}>
                         <div className="card-header border-0 py-3" style={adminStyles.table.header}>
-                            <h6 className="mb-0">
-                                Prediction Distribution 
-                            </h6>
+                            <div className="d-flex justify-content-between align-items-center">
+                                <h6 className="mb-0">
+                                    {showPredictionErrors ? 'Prediction Errors' : 'Prediction Distribution'}
+                                </h6>
+                                <button
+                                    className="btn btn-sm"
+                                    onClick={() => setShowPredictionErrors(!showPredictionErrors)}
+                                    disabled={isLoadingPredictions}
+                                    style={{
+                                        background: showPredictionErrors 
+                                            ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                                            : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '8px 16px',
+                                        fontWeight: '600',
+                                        fontSize: '0.85rem',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                                        cursor: isLoadingPredictions ? 'not-allowed' : 'pointer',
+                                        opacity: isLoadingPredictions ? 0.6 : 1
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (!isLoadingPredictions) {
+                                            e.currentTarget.style.transform = 'translateY(-1px)';
+                                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (!isLoadingPredictions) {
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                                        }
+                                    }}
+                                >
+                                    <i className={`fas ${showPredictionErrors ? 'fa-chart-bar' : 'fa-exclamation-triangle'} me-1`}></i>
+                                    {showPredictionErrors ? 'Show Distribution' : 'Show Errors'}
+                                </button>
+                            </div>
                         </div>
                         <div className="card-body p-4">
                             {isLoadingPredictions ? (
@@ -342,12 +404,27 @@ function RatingHome() {
                                         <div className="mt-3 text-muted">Loading prediction data...</div>
                                     </div>
                                 </div>
+                            ) : showPredictionErrors ? (
+                                <PredictionErrors 
+                                    papers={processedAllPapers}
+                                    rebuttalPredictionsMap={rebuttalPredictionsMap}
+                                    nonRebuttalPredictionsMap={nonRebuttalPredictionsMap}
+                                    currentPrompt={currentPrompt}
+                                />
                             ) : (
                                 <RatingDistributionChart 
                                     papers={processedAllPapers}
                                     currentPrompt={currentPrompt}
                                     predictionsMap={predictionsMap}
+                                    rebuttalPredictionsMap={rebuttalPredictionsMap}
+                                    nonRebuttalPredictionsMap={nonRebuttalPredictionsMap}
+                                    showRebuttalComparison={pub_rebuttal && rebuttalPreds.length > 0 && nonRebuttalPreds.length > 0}
                                     field={field}
+                                    pub_rebuttal={pub_rebuttal}
+                                    setPubRebuttal={setPubRebuttal}
+                                    fieldValue={field}
+                                    setField={setField}
+                                    isLoadingPredictions={isLoadingPredictions}
                                 />
                             )}
                         </div>

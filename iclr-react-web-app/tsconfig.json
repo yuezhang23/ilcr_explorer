@@ -20,7 +20,10 @@
     "jsx": "react-jsx",
     "types": ["node", "jest", "react", "react-dom"],
     "noImplicitAny": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/.tsbuildinfo",
+    "assumeChangesOnlyAffectDirectDependencies": true
   },
   "include": [
     "src"

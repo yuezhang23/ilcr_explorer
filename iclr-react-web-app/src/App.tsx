@@ -9,7 +9,7 @@ function App() {
    return (
     <HashRouter>
       <YearProvider>
-        <div>
+        <div className="App">
           <Routes>
             <Route path="/*" element={<Project />} />
           </Routes>

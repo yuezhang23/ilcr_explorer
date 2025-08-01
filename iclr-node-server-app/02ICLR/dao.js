@@ -114,7 +114,54 @@ export const getTotalSubmissionsCountWithSearch = (searchTerm) => {
     console.error("Error in getTotalSubmissionsCountWithSearch:", error);
     return 0;
   }
-};
+}
+
+// Get papers ranked by average rating
+export const getPapersRankedByRating = (limit) => {
+  try {
+    return getCurrentModel().aggregate([
+      {
+        $addFields: {
+          averageRating: {
+            $avg: {
+              $map: {
+                input: "$metareviews",
+                as: "review",
+                in: {
+                  $toDouble: "$$review.values.rating"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $match: {
+          averageRating: { $exists: true, $ne: null }
+        }
+      },
+      {
+        $sort: { averageRating: -1 }
+      },
+      {
+        $limit: limit
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          authors: 1,
+          url: 1,
+          averageRating: { $round: ["$averageRating", 2] },
+          metareviews: 1
+        }
+      }
+    ]);
+  } catch (error) {
+    console.error("Error in getPapersRankedByRating:", error);
+    return [];
+  }
+}
 
 
 

@@ -4,7 +4,7 @@ export const adminStyles = {
   // Main container styles
   container: {
     backgroundColor: '#f8fafc',
-    minHeight: '100vh'
+    minHeight: '100vh',
   },
 
   // Pagination styles
@@ -110,7 +110,7 @@ export const adminStyles = {
       minHeight: '150px',
       height: '120px',
       transition: 'all 0.3s ease',
-      padding: '20px',
+      padding: '10px',
       backgroundColor: '#ffffff'
     },
     expanded: {
@@ -312,7 +312,11 @@ export const adminStyles = {
   // Prediction styles
   prediction: {
     container: {
-      fontSize: '0.9rem'
+      fontSize: '0.9rem',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%'
     }
   },
 
@@ -444,37 +448,48 @@ export const adminStyles = {
     }
   },
 
-  // Clickable link style for table headers  
-  clickableLink: {
-    border: '4px solid rgb(22, 40, 204)', // subtle indigo border
+  // Analytics button style (similar to Nav Home button but adapted for admin background)
+  analyticsButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '500',
+    fontSize: '0.95rem',
+    padding: '8px 16px',
     borderRadius: '8px',
-    padding: '2px 12px',
-    color: 'rgb(239, 237, 243)',
-    backgroundColor: 'rgb(114, 208, 116)', // soft indigo background
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
+    transition: 'all 0.3s ease',
     textDecoration: 'none',
-    boxShadow: '0 2px 4px rgba(227, 232, 76, 0.04)',
-    display: 'inline-block',
+    margin: '0 4px',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
   },
-  clickableLinkHover: {
-    background: 'rgba(210, 175, 116, 0.13)',
-    borderColor: '#4f46e5',
-    color: '#4f46e5',
-    textDecoration: 'none',
+  analyticsButtonHover: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    color: '#ffffff',
+    fontWeight: '600',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    textDecoration: 'none'
+  },
+  analyticsButtonActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    color: '#ffffff',
+    fontWeight: '600',
+    transform: 'translateY(-1px)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    textDecoration: 'none'
   },
 
   // Enhanced Dropdown styles (common between admin.tsx and rating.tsx)
   dropdown: {
     button: {
-      fontSize: '0.9rem',
-      padding: '8px 12px',
-      border: '1px solid #dee2e6',
-      borderRadius: '8px',
-      backgroundColor: '#fff',
-      minWidth: '80px',
-      fontWeight: '500',
+      fontSize: '0.8rem',
+      padding: '6px 10px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '6px',
+      backgroundColor: '#f9fafb',
+      minWidth: '70px',
+      fontWeight: '400',
       transition: 'all 0.3s ease',
       cursor: 'pointer',
       display: 'flex',
@@ -482,13 +497,13 @@ export const adminStyles = {
       justifyContent: 'space-between'
     },
     buttonDisabled: {
-      fontSize: '0.9rem',
-      padding: '8px 12px',
-      border: '1px solid #dee2e6',
-      borderRadius: '8px',
-      backgroundColor: '#f8f9fa',
-      minWidth: '80px',
-      fontWeight: '500',
+      fontSize: '0.8rem',
+      padding: '6px 10px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '6px',
+      backgroundColor: '#f3f4f6',
+      minWidth: '70px',
+      fontWeight: '400',
       transition: 'all 0.3s ease',
       cursor: 'not-allowed',
       opacity: 0.6,
@@ -606,7 +621,8 @@ export const adminStyles = {
     },
     content: {
       fontSize: '13px',
-      lineHeight: '1.4'
+      lineHeight: '1.4',
+      textAlign: 'left' as const
     },
     arrow: {
       position: 'absolute' as const,
@@ -660,7 +676,7 @@ export const adminStyles = {
     },
     switchLabel: {
       fontSize: '0.9rem',
-      fontWeight: '600',
+      fontWeight: '400',
       color: '#374151'
     }
   },

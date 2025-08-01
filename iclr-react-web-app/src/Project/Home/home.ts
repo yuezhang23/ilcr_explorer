@@ -243,10 +243,15 @@ export const getPredsByPaperIdsAndPromptAndRebuttal = async (paperIds: string[],
 
 // Get predictions by paper ids and prompt and rebuttal in batches
 export const getPredsByPromptAndRebuttal = async (prompt: string, rebuttal: number) => {    
-    const response = await axios.post(`${PROMPT_API}/predictions_by_prompt_and_rebuttal`, { prompt: prompt, rebuttal: rebuttal });
-    
+    const response = await axios.post(`${PROMPT_API}/predictions_by_prompt_and_rebuttal`, { prompt, rebuttal });
     return response.data;
 };
+
+// Get papers ranked by average rating
+export const getPapersRankedByRating = async (limit: number) => {
+    const response = await axios.get(`${ICLR_API}/ranked/rating/${limit}`);
+    return response.data;
+}
 
 
 

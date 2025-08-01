@@ -11,6 +11,7 @@ const predictionSchema = new mongoose.Schema({
     model: {type: String, default: 'gpt-4o-mini'},
     rebuttal: {type: Number, default: -1},
     prediction: {type: String, default: 'None'},
+    decision: {type: String, default: 'O'},
 });
 
 

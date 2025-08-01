@@ -10,17 +10,17 @@ const BATCH_SIZE = 200;
 async function importData() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(CONNECTION_STRING, {dbName: "iclr_2024"}, {collection: "iclr_2024"});
+    await mongoose.connect(CONNECTION_STRING, {dbName: "iclr_2024"}, {collection: "iclr_2025"});
     console.log("Connected to MongoDB");
 
     // Read the JSON file
-    const model = mongoose.model("iclr_2024", submissioSchema);
-    const data = JSON.parse(fs.readFileSync('./data/reviews_2024_ICLR.json', 'utf8'));
+    const model = mongoose.model("iclr_2025", submissioSchema);
+    const data = JSON.parse(fs.readFileSync('./data/reviews_2025_ICLR.json', 'utf8'));
     console.log(`Found ${data.length} documents to import`);
 
     // Clear existing data (optional)
-    await model.deleteMany({});
-    console.log("Cleared existing data");
+    // await model.deleteMany({});
+    // console.log("Cleared existing data");
 
     // Insert the data in batches
     let totalImported = 0;

@@ -18,6 +18,8 @@ export interface ProjectState {
   }
   predictionReducer: {
     currentPreds: any[]
+    rebuttalPreds: any[]
+    nonRebuttalPreds: any[]
   }
   promptTemplateReducer: {
     promptTemplates: any[]
@@ -36,11 +38,11 @@ const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
-        ignoredActions: ['iclr/setIclr', 'prediction/setCurrentPreds'],
+        ignoredActions: ['iclr/setIclr', 'prediction/setCurrentPreds', 'prediction/setRebuttalPreds', 'prediction/setNonRebuttalPreds'],
         // Ignore these field paths in all actions
         ignoredActionPaths: ['payload.metareviews', 'payload.rebuttal'],
         // Ignore these paths in the state
-        ignoredPaths: ['iclrReducer.currentIclr', 'predictionReducer.currentPreds'],
+        ignoredPaths: ['iclrReducer.currentIclr', 'predictionReducer.currentPreds', 'predictionReducer.rebuttalPreds', 'predictionReducer.nonRebuttalPreds'],
       },
     }),
 });

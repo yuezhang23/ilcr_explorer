@@ -39,7 +39,7 @@ const candidates = [
 ] 
 
 // Name of the JSONL file to import
-const JSONL_FILE = './data/result_no_rebut.jsonl';
+const JSONL_FILE = './data/result_no_rebut_25.jsonl';
 
 // Connect to MongoDB
 async function main() {
@@ -61,8 +61,8 @@ async function main() {
 
             try {
                 // Define models
-                const Prediction = mongoose.model('prediction', predictionSchema);
-                const ICLR2024 = mongoose.model('iclr_2024', submissioSchema);
+                const Prediction = mongoose.model('prediction_2025', predictionSchema);
+                const ICLR2025 = mongoose.model('iclr_2025', submissioSchema);
 
                 // Read JSONL file line by line
                 const rl = readline.createInterface({
@@ -104,9 +104,9 @@ async function main() {
                     // Find paper in iclr_2024 with timeout handling
                     let paper;
                     try {
-                        paper = await ICLR2024.findOne({ s_id });
+                        paper = await ICLR2025.findOne({ s_id });
                         if (!paper) {
-                            console.error(`No iclr_2024 paper found for s_id: ${s_id}`);
+                            console.error(`No iclr_2025 paper found for s_id: ${s_id}`);
                             continue;
                         }
                     } catch (err) {
@@ -124,7 +124,8 @@ async function main() {
                         paper_title,
                         model: 'gpt-4o-mini', // Explicitly set the model
                         rebuttal,
-                        prediction: prediction, // Use the corrected prediction value
+                        prediction: prediction.toLowerCase() === 'yes' || prediction.toLowerCase() === 'accept' ? 'Accept' : prediction.toLowerCase() === 'no' || prediction.toLowerCase() === 'reject' ? 'Reject' : 'Borderline', // Use the corrected prediction value
+                        decision: paper.decision.toLowerCase() === 'no' || paper.decision.toLowerCase() === 'reject' ? 'Reject' : 'Accept',
                     };
 
                     console.log(`Processing record ${currentRecord}:`, doc);

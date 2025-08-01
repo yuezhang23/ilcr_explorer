@@ -12,6 +12,7 @@ import Profile from './User/Profile';
 import Claims from './User/Claims';
 // import Reviews from './User/Reviews';
 import ProtectedRoute from '../components/ProtectedRoute';
+import RatingHome from './Home/rating';
 
 export default function Project() {
   return (
@@ -22,6 +23,7 @@ export default function Project() {
           <Routes>
               <Route path="/" element={<Navigate to="Home" />} />
               <Route path="Home/*" element={<Home />} />
+              {/* <Route path="Analytics/*" element={<RatingHome/>} /> */}
               <Route path="Search" element={<Search />} />
               <Route path="User/Signin" element={<Signin />} />
               <Route path="User/Signup" element={<Signup />} />

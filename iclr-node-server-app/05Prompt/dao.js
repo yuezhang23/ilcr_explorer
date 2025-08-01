@@ -1,25 +1,34 @@
 import predictionSchema from "./schema.js";
 import mongoose from "mongoose";
+import { getCurrentYear } from "../config/globalConfig.js";
 
+const models = {
+  "2024": mongoose.model('predictions', predictionSchema, 'predictions'),
+  "2025": mongoose.model("prediction_2025", predictionSchema, "prediction_2025"),
+  "2026": mongoose.model("prediction_2026", predictionSchema, "prediction_2026"),
+}
 
-// const Templates = mongoose.model('templates', templatesSchema);
-const model = mongoose.model('predictions', predictionSchema, 'predictions');
+// Get the current model based on global year setting
+const getCurrentModel = () => {
+    const year = getCurrentYear();
+    return models[year];
+};
 
 
 export const getPredictionByPaperIdAndPrompt = (paperId, prompt) => {
-    return model.findOne({ paper_id: paperId, prompt: prompt });
+    return getCurrentModel().findOne({ paper_id: paperId, prompt: prompt });
 };
 
 export const getAllPredictionsByPrompt = (prompt) => {
-    return model.find({ prompt: prompt });
+    return getCurrentModel().find({ prompt: prompt });
 };
 
 export const getAllPredictionsByPaperId = (paperId) => {
-    return model.find({ paper_id: paperId });
+    return getCurrentModel().find({ paper_id: paperId });
 };
 
 export const getAllPredictionsByLatestPrompt = async () => {
-    const results = await model.aggregate([
+    const results = await getCurrentModel().aggregate([
         { $sort: { _id: -1 } }, // Sort by newest first
         { $group: {
             _id: "$paper_id",
@@ -31,35 +40,35 @@ export const getAllPredictionsByLatestPrompt = async () => {
 };
 
 export const createPrediction = async (prompt, paperId, title, rebuttal, prediction) => {
-    const deleteResult = await model.deleteMany({ paper_title: title, prompt: prompt , rebuttal: rebuttal});
+    const deleteResult = await getCurrentModel().deleteMany({ paper_title: title, prompt: prompt , rebuttal: rebuttal});
     console.log(`Deleted ${deleteResult.deletedCount} existing predictions`);
-    return model.create({ prompt: prompt, paper_id: paperId, paper_title: title, rebuttal: rebuttal, prediction: prediction });
+    return getCurrentModel().create({ prompt: prompt, paper_id: paperId, paper_title: title, rebuttal: rebuttal, prediction: prediction });
 };
 
 export const deletePrediction = (paperId, prompt) => {
-    return model.deleteOne({ paper_id: paperId, prompt: prompt });
+    return getCurrentModel().deleteOne({ paper_id: paperId, prompt: prompt });
 };
 
 export const updatePrediction = async (prompt, paperId, title, prediction) => {
-    await model.deleteMany({ paper_title: title, prompt: prompt });
-    return model.create({ prompt: prompt, paper_id: paperId, paper_title: title, prediction: prediction });
+    await getCurrentModel().deleteMany({ paper_title: title, prompt: prompt });
+    return getCurrentModel().create({ prompt: prompt, paper_id: paperId, paper_title: title, prediction: prediction });
 };
 
 export const getOnePredictionByPaperId = (paperId) => {
-    return model.findOne({ paper_id: paperId });
+    return getCurrentModel().findOne({ paper_id: paperId });
 };
 
 export const getPredByPaperIdsAndPromptAndRebuttal = (paper_id, prompt, rebuttal) => {
-    return model.findOne({ paper_id: paper_id, prompt: prompt, rebuttal: rebuttal });
+    return getCurrentModel().findOne({ paper_id: paper_id, prompt: prompt, rebuttal: rebuttal });
 };
 
 
 export const getPredsByPromptAndRebuttal = (prompt, rebuttal) => {
-    return model.find({ prompt: prompt, rebuttal: rebuttal });
+    return getCurrentModel().find({ prompt: prompt, rebuttal: rebuttal });
 };
 
 export const getPredsByPaperIdsAndPromptAndRebuttalBatch = (paper_ids, prompt, rebuttal) => {
-    return model.find({ 
+    return getCurrentModel().find({ 
         paper_id: { $in: paper_ids }, 
         prompt: prompt, 
         rebuttal: rebuttal 

@@ -94,6 +94,18 @@ export default function iclr(app) {
         res.send(response);
     }
 
+    const getPapersRankedByRating = async (req, res) => {
+        try {
+            const count = parseInt(req.params.count) || 20;
+            const response = await dao.getPapersRankedByRating(count);
+            console.log("response", response);
+            res.send(response);
+        } catch (error) {
+            console.error("Error in getPapersRankedByRating:", error);
+            res.status(500).send({ error: "Failed to retrieve papers ranked by rating" });
+        }
+    }
+
 
     const findSubmissionsByTitle = async (req, res) => {
         const newSubmissions = await dao.findSubmissionsByTitle(req.params.title);
@@ -251,6 +263,7 @@ app.get("/api/iclr/bib", getAllBibData);
 app.delete("/api/iclr/delete/:id", deleteSubmission);
 
 app.get("/api/iclr/paginated", getSubmissionsWithPagination);
+app.get("/api/iclr/ranked/rating/:count", getPapersRankedByRating);
 
 
 }

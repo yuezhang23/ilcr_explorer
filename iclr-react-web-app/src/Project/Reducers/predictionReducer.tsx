@@ -4,10 +4,18 @@ const predictionSlice = createSlice({
     name: "prediction",
     initialState: {
         currentPreds: [],
+        rebuttalPreds: [], // New: predictions with rebuttal
+        nonRebuttalPreds: [], // New: predictions without rebuttal
     },
     reducers: {
         setCurrentPreds: (state, action) => {
             state.currentPreds = action.payload;
+        },
+        setRebuttalPreds: (state, action) => {
+            state.rebuttalPreds = action.payload;
+        },
+        setNonRebuttalPreds: (state, action) => {
+            state.nonRebuttalPreds = action.payload;
         },
         addPrediction: (state, action) => {
             state.currentPreds.push(action.payload);
@@ -24,5 +32,5 @@ const predictionSlice = createSlice({
     },
 });
 
-export const { setCurrentPreds, addPrediction, updatePrediction } = predictionSlice.actions;
+export const { setCurrentPreds, setRebuttalPreds, setNonRebuttalPreds, addPrediction, updatePrediction } = predictionSlice.actions;
 export default predictionSlice.reducer;
