@@ -60,4 +60,8 @@ node_modules/
 
 # Temporary files
 *.tmp
-*.temp 
+*.temp
+
+# Large data files
+iclr-node-server-app/data/reviews_2025_ICLR.json
+iclr-node-server-app/data/*.jsonl 
