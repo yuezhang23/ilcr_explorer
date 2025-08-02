@@ -10,7 +10,9 @@ export const ratingStyles = {
     leftMenu: {
         overflow: 'visible',
         width: '350px',
-        height: 'fit-content'
+        height: 'fit-content',
+        position: 'relative',
+        zIndex: 1000
     } as CSSProperties,
     
     leftMenuHeader: {

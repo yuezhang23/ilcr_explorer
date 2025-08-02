@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import PredictionMismatchTable from './PredictionMismatchTable';
 
 interface PredictionErrorsProps {
   papers: any[];
@@ -11,7 +12,8 @@ interface ErrorDetail {
   paperId: string;
   title: string;
   url: string;
-  prediction: string;
+  nonRebuttalPrediction: string;
+  rebuttalPrediction: string;
   decision: string;
   rating: number;
   confidence: number;
@@ -38,8 +40,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   nonRebuttalPredictionsMap,
   currentPrompt,
 }) => {
-  const [showNonRebuttal, setShowNonRebuttal] = useState(false);
-  const [showRebuttal, setShowRebuttal] = useState(false);
+  const [showMismatch, setShowMismatch] = useState(false);
 
   // Helper function to get decision from paper
   const getDecision = (paper: any): string => {
@@ -77,17 +78,19 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   };
 
   // Process papers and calculate errors and matrices
-  const { nonRebuttalErrors, rebuttalErrors, confusionMatrixData } = useMemo(() => {
+  const { nonRebuttalErrors, rebuttalErrors, confusionMatrixData, predictionMismatches } = useMemo(() => {
     const nonRebuttalErrorIds: string[] = [];
     const rebuttalErrorIds: string[] = [];
     const nonRebuttalMatrix: ConfusionMatrix = { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 };
     const rebuttalMatrix: ConfusionMatrix = { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 };
+    const mismatches: ErrorDetail[] = [];
 
     papers.forEach(paper => {
       const decision = getDecision(paper);
+      const nonRebuttalPrediction = nonRebuttalPredictionsMap.get(paper._id);
+      const rebuttalPrediction = rebuttalPredictionsMap.get(paper._id);
       
       // Check non-rebuttal predictions
-      const nonRebuttalPrediction = nonRebuttalPredictionsMap.get(paper._id);
       if (nonRebuttalPrediction) {
         if (nonRebuttalPrediction !== decision) {
           nonRebuttalErrorIds.push(paper._id);
@@ -96,49 +99,42 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
       }
       
       // Check rebuttal predictions
-      const rebuttalPrediction = rebuttalPredictionsMap.get(paper._id);
       if (rebuttalPrediction) {
         if (rebuttalPrediction !== decision) {
           rebuttalErrorIds.push(paper._id);
         }
         updateMatrix(rebuttalMatrix, rebuttalPrediction, decision);
       }
+
+      // Check for mismatches between non-rebuttal and rebuttal predictions
+      if (nonRebuttalPrediction && rebuttalPrediction && nonRebuttalPrediction !== rebuttalPrediction) {
+        mismatches.push({
+          paperId: paper._id,
+          title: paper.title || 'No title',
+          url: paper.url || 'No url',
+          nonRebuttalPrediction,
+          rebuttalPrediction,
+          decision,
+          rating: paper.rating || 0,
+          confidence: paper.confidence || 0
+        });
+      }
     });
 
     return {
       nonRebuttalErrors: nonRebuttalErrorIds,
       rebuttalErrors: rebuttalErrorIds,
-      confusionMatrixData: { nonRebuttal: nonRebuttalMatrix, rebuttal: rebuttalMatrix }
+      confusionMatrixData: { nonRebuttal: nonRebuttalMatrix, rebuttal: rebuttalMatrix },
+      predictionMismatches: mismatches
     };
   }, [papers, rebuttalPredictionsMap, nonRebuttalPredictionsMap]);
+
+
 
   const nonRebuttalMetrics = calculateMetrics(confusionMatrixData.nonRebuttal);
   const rebuttalMetrics = calculateMetrics(confusionMatrixData.rebuttal);
 
-  // Get error details for display
-  const getErrorDetails = (paperIds: string[], isRebuttal: boolean): ErrorDetail[] => {
-    return paperIds.map(paperId => {
-      const paper = papers.find(p => p._id === paperId);
-      if (!paper) return null;
-      
-      const prediction = isRebuttal 
-        ? rebuttalPredictionsMap.get(paperId)
-        : nonRebuttalPredictionsMap.get(paperId);
-      
-      return {
-        paperId,
-        title: paper.title || 'No title',
-        url: paper.url || 'No url',
-        prediction,
-        decision: getDecision(paper),
-        rating: paper.rating || 0,
-        confidence: paper.confidence || 0
-      };
-    }).filter(Boolean) as ErrorDetail[];
-  };
 
-  const nonRebuttalErrorDetails = getErrorDetails(nonRebuttalErrors, false);
-  const rebuttalErrorDetails = getErrorDetails(rebuttalErrors, true);
 
   // Confusion Matrix Component
   const ConfusionMatrix = ({ matrix, title, metrics }: { matrix: ConfusionMatrix, title: string, metrics: Metrics }) => {
@@ -162,7 +158,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
 
     return (
       <div className="col-md-6">
-        <div className="card border-0 shadow-sm h-100">
+        <div className="card border-0 shadow-sm h-100" style={{ borderRadius: '12px' }}>
           <div className="card-header border-0 mt-2" style={{
             backgroundColor: 'rgba(242, 242, 242, 0.81)',
             color: 'black',
@@ -222,112 +218,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
     );
   };
 
-  // Error Table Component
-  const ErrorTable = ({ errors, title, errorCount, isVisible, onToggle }: {
-    errors: ErrorDetail[];
-    title: string;
-    errorCount: number;
-    isVisible: boolean;
-    onToggle: () => void;
-  }) => (
-    <div className="col-12">
-      <div className="card border-0 shadow-sm h-100">
-        <div 
-          className="card-header border-0" 
-          style={{ 
-            cursor: 'pointer',
-            background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-            transition: 'all 0.3s ease-in-out',
-            borderBottom: '2px solid #2196f3'
-          }}
-          onClick={onToggle}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, #bbdefb 0%, #90caf9 100%)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          <h6 className="mb-0 d-flex justify-content-between align-items-center fw-bold">
-            <span>
-              <i className="fas fa-exclamation-triangle me-2" style={{ color: '#f39c12' }}></i>
-              {title} - {errorCount}
-              <span className="ms-2 text-muted" style={{ fontSize: '0.75rem', fontWeight: 'normal' }}>
-                (Click to {isVisible ? 'collapse' : 'expand'})
-              </span>
-            </span>
-            <div className="d-flex align-items-center">
-              <i className={`fas fa-chevron-${isVisible ? 'up' : 'down'} me-2`} style={{ color: '#2196f3' }}></i>
-              <i className="fas fa-hand-pointer" style={{ color: '#2196f3', fontSize: '0.8rem' }}></i>
-            </div>
-          </h6>
-        </div>
-        {isVisible && (
-          <div className="card-body p-0">
-            {errors.length > 0 ? (
-              <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto', marginTop: '10px' }}>
-                <table className="table table-sm table-hover mb-0">
-                  <thead className="sticky-top mt-4" style={{ backgroundColor: '#e9ecef', borderBottom: '2px solid #dee2e6', paddingTop: '10px' }}>
-                    <tr>
-                      {['Title', 'Prediction', 'Decision', 'Rating', 'Confidence'].map(header => (
-                        <th key={header} scope="col" style={{ 
-                          width: header === 'Title' ? '40%' : '15%',
-                          backgroundColor: '#e9ecef', 
-                          color: '#495057', 
-                          fontWeight: '600', 
-                          border: 'none' 
-                        }} className="text-center">{header}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {errors.map((error, index) => (
-                      <tr key={index}>
-                        <td className="text-truncate text-center" style={{ maxWidth: '200px', fontSize: '0.85rem' }} title={error.title}>
-                          {error.url && error.url !== 'No url' ? (
-                            <a href={error.url} target="_blank" rel="noopener noreferrer" className="text-decoration-none">
-                              {error.title}
-                            </a>
-                          ) : (
-                            error.title
-                          )}
-                        </td>
-                        <td className="text-center">
-                          <span className={`badge ${error.prediction === 'Accept' ? 'bg-success' : 'bg-danger'}`}>
-                            {error.prediction}
-                          </span>
-                        </td>
-                        <td className="text-center">
-                          <span className={`badge ${error.decision === 'Accept' ? 'bg-success' : 'bg-danger'}`}>
-                            {error.decision}
-                          </span>
-                        </td>
-                        <td className="text-center" style={{ 
-                          color: error.rating > 75 ? '#dc3545' : '#495057',
-                          fontWeight: 'normal'
-                        }}>{error.rating.toFixed(2)}</td>
-                        <td className="text-center" style={{ 
-                          color: error.confidence > 75 ? '#dc3545' : '#495057',
-                          fontWeight: 'normal'
-                        }}>{error.confidence.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-4 text-muted">
-                <i className="fas fa-check-circle fa-2x mb-2" style={{ color: '#28a745' }}></i>
-                <p>No prediction errors found for {title.toLowerCase()} predictions</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+
 
   // Navigation Button Component
   const NavButton = ({ onClick, children, bgColor }: { onClick: () => void, children: React.ReactNode, bgColor: string }) => (
@@ -354,7 +245,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   return (
     <div className="prediction-errors">
       {/* Confusion Matrix Summary */}
-      {!showNonRebuttal && !showRebuttal && (
+      {!showMismatch && (
         <div className="row">
           <ConfusionMatrix 
             matrix={confusionMatrixData.nonRebuttal} 
@@ -369,46 +260,39 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
         </div>
       )}
 
-      {/* Error Sections */}
-      {showNonRebuttal && (
-        <div className="row">
-          <ErrorTable 
-            errors={nonRebuttalErrorDetails}
-            title="Non-Rebuttal Mismatch"
-            errorCount={nonRebuttalErrors.length}
-            isVisible={showNonRebuttal}
-            onToggle={() => setShowNonRebuttal(!showNonRebuttal)}
-          />
-        </div>
-      )}
-      {showRebuttal && (
-        <div className="row">
-          <ErrorTable 
-            errors={rebuttalErrorDetails}
-            title="Rebuttal Mismatch"
-            errorCount={rebuttalErrors.length}
-            isVisible={showRebuttal}
-            onToggle={() => setShowRebuttal(!showRebuttal)}
-          />
-        </div>
+      {/* Prediction Mismatch Table */}
+      {showMismatch && (
+        <>
+          <div className="row">
+            <PredictionMismatchTable 
+              predictionMismatches={predictionMismatches}
+            />
+          </div>
+          <div className="row mt-3">
+            <div className="col-12">
+              <div className="d-flex justify-content-center">
+                <NavButton 
+                  onClick={() => setShowMismatch(false)}
+                  bgColor="rgba(108, 117, 125, 0.81)"
+                >
+                  Back to Summary
+                </NavButton>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
-      {/* Navigation Buttons */}
-      {!showNonRebuttal && !showRebuttal && (
+      {/* Navigation Button */}
+      {!showMismatch && (
         <div className="row mt-3">
           <div className="col-12">
-            <div className="d-flex gap-2 justify-content-around">
+            <div className="d-flex justify-content-center">
               <NavButton 
-                onClick={() => setShowNonRebuttal(true)}
+                onClick={() => setShowMismatch(true)}
                 bgColor="rgba(37, 118, 224, 0.81)"
               >
-                Non-Rebuttal Mismatch
-              </NavButton>
-              <NavButton 
-                onClick={() => setShowRebuttal(true)}
-                bgColor="rgba(10, 102, 221, 0.81)"
-              >
-                Rebuttal Mismatch
+                Prediction Mismatches
               </NavButton>
             </div>
           </div>

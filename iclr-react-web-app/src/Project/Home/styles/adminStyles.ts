@@ -117,11 +117,11 @@ export const adminStyles = {
   // Row styles
   row: {
     base: {
-      minHeight: '150px',
-      height: '120px',
+      minHeight: '160px',
+      height: '180px',
       transition: 'all 0.3s ease',
       padding: '10px',
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
     },
     expanded: {
       minHeight: '150px',
@@ -238,6 +238,7 @@ export const adminStyles = {
     container: {
       backgroundColor: '#f8fafc',
       border: '1px solid #e2e8f0',
+      borderRadius: '8px',
       whiteSpace: 'normal' as const,
       wordBreak: 'break-word' as const,
       fontSize: '0.9rem',
@@ -251,7 +252,7 @@ export const adminStyles = {
   // Authors styles
   authors: {
     list: {
-      maxHeight: '100px',
+      maxHeight: '90px',
       overflow: 'hidden',
       position: 'relative' as const
     },
@@ -473,7 +474,7 @@ export const adminStyles = {
     cursor: 'pointer',
     transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
     boxShadow: '0 2px 4px rgba(59, 130, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-    fontSize: '1.1rem',
+    fontSize: '1.0rem',
     minWidth: '80px',
     textDecoration: 'none',
     position: 'relative' as const,

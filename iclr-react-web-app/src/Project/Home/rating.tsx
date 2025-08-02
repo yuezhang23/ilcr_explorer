@@ -228,7 +228,7 @@ function RatingHome() {
                                     currentPrompt={currentPrompt}
                                     onPromptChange={setCurrentPrompt}
                                     isLoading={isLoadingPredictions}
-                                    showTooltip={false}
+                                    showTooltip={true}
                                     tooltipPosition="right"
                                     buttonStyle={{ width: '100%' }}
                                     className="w-100"
@@ -299,10 +299,10 @@ function RatingHome() {
                                     predictionsMap={predictionsMap}
                                     rebuttalPredictionsMap={rebuttalPredictionsMap}
                                     nonRebuttalPredictionsMap={nonRebuttalPredictionsMap}
-                                    showRebuttalComparison={pub_rebuttal && rebuttalPreds.length > 0 && nonRebuttalPreds.length > 0}
+                                    // showRebuttalComparison={pub_rebuttal && rebuttalPreds.length > 0 && nonRebuttalPreds.length > 0}
                                     field={field}
-                                    pub_rebuttal={pub_rebuttal}
-                                    setPubRebuttal={setPubRebuttal}
+                                    // pub_rebuttal={pub_rebuttal}
+                                    // setPubRebuttal={setPubRebuttal}
                                     fieldValue={field}
                                     setField={setField}
                                     isLoadingPredictions={isLoadingPredictions}

@@ -133,8 +133,6 @@ const Pagination = React.memo(({
         }
     }, [currentPage, totalPages]);
 
-    if (totalRecords === 0) return null;
-
     return (
         <div className="d-flex align-items-center">
             {searchTerm && (
@@ -146,6 +144,10 @@ const Pagination = React.memo(({
                         padding: '6px 12px',
                         color: '#dc2626',
                         backgroundColor: '#fecaca',
+                        position: 'absolute',
+                        top: '25px',
+                        left: '25%',
+                        transform: 'translateX(-50%)',
                         fontWeight: 600,
                         cursor: 'pointer',
                         transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
@@ -157,7 +159,7 @@ const Pagination = React.memo(({
                     onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = '#fca5a5';
                         e.currentTarget.style.color = '#b91c1c';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        // e.currentTarget.style.transform = 'translateY(-1px)';
                         e.currentTarget.style.boxShadow = '0 4px 8px rgba(220, 38, 38, 0.2)';
                     }}
                     onMouseLeave={(e) => {
@@ -170,45 +172,49 @@ const Pagination = React.memo(({
                     Clear Search
                 </button>
             )}
-            <button 
-                onClick={goToPreviousPage} 
-                disabled={currentPage === 1}
-                className="btn me-3 rounded-pill"
-                style={getPaginationButtonStyle(currentPage === 1)}
-                onMouseEnter={handlePreviousMouseEnter}
-                onMouseLeave={handlePreviousMouseLeave}
-            >
-                ← Previous
-            </button>
-            <div className="text-black text-center" style={adminStyles.pagination.pageInfo}>
-                <div className="fw-bold">
-                    Page 
-                    <input
-                        type="number"
-                        min={1}
-                        max={totalPages}
-                        value={pageInput}
-                        onChange={handlePageInputChange}
-                        onBlur={handlePageInputBlur}
-                        onKeyDown={handlePageInputKeyDown}
-                        style={adminStyles.pagination.pageInput}
-                    />
-                    of {totalPages}
-                </div>
-                <div style={adminStyles.pagination.totalRecords}>
-                    {totalRecords} total records
-                </div>
-            </div>
-            <button 
-                onClick={goToNextPage} 
-                disabled={currentPage === totalPages}
-                className="btn ms-3 rounded-pill"
-                style={getPaginationButtonStyle(currentPage === totalPages)}
-                onMouseEnter={handleNextMouseEnter}
-                onMouseLeave={handleNextMouseLeave}
-            >
-                Next →
-            </button>
+            {totalRecords > 0 && (
+                <>
+                    <button 
+                        onClick={goToPreviousPage} 
+                        disabled={currentPage === 1}
+                        className="btn me-3 rounded-pill"
+                        style={getPaginationButtonStyle(currentPage === 1)}
+                        onMouseEnter={handlePreviousMouseEnter}
+                        onMouseLeave={handlePreviousMouseLeave}
+                    >
+                        ← Previous
+                    </button>
+                    <div className="text-black text-center" style={adminStyles.pagination.pageInfo}>
+                        <div className="fw-bold">
+                            Page 
+                            <input
+                                type="number"
+                                min={1}
+                                max={totalPages}
+                                value={pageInput}
+                                onChange={handlePageInputChange}
+                                onBlur={handlePageInputBlur}
+                                onKeyDown={handlePageInputKeyDown}
+                                style={adminStyles.pagination.pageInput}
+                            />
+                            of {totalPages}
+                        </div>
+                        <div style={adminStyles.pagination.totalRecords}>
+                            {totalRecords} total records
+                        </div>
+                    </div>
+                    <button 
+                        onClick={goToNextPage} 
+                        disabled={currentPage === totalPages}
+                        className="btn ms-3 rounded-pill"
+                        style={getPaginationButtonStyle(currentPage === totalPages)}
+                        onMouseEnter={handleNextMouseEnter}
+                        onMouseLeave={handleNextMouseLeave}
+                    >
+                        Next →
+                    </button>
+                </>
+            )}
         </div>
     );
 });
@@ -355,14 +361,14 @@ const PaperRow = React.memo(({
 
     return (
         <div 
-            className="border-bottom" 
+            // className="border-bottom" 
             style={{ ...getRowBackground(index, isAbstractExpanded || isAuthorsExpanded) }}
             onMouseEnter={handleRowMouseEnter}
             onMouseLeave={handleRowMouseLeave}
         >
-            <div className="row align-items-center text-center">
+            <div className="row align-items-center text-center my-4">
                 <div className="col-3">
-                    <div className='text-center d-block mb-2'>
+                    <div className='text-center d-block'>
                         {paper.url ? (
                             <a href={paper.url} target="_blank" rel="noopener noreferrer" 
                                className="text-decoration-none fw-bold"
@@ -405,7 +411,7 @@ const PaperRow = React.memo(({
                 </div>
                 <div className='col-2'>
                     <div className='w-100'>
-                        <ul className='list-unstyled mb-0' style={isAuthorsExpanded ? adminStyles.authors.listExpanded : adminStyles.authors.list}>
+                        <ul className='list-unstyled' style={isAuthorsExpanded ? adminStyles.authors.listExpanded : adminStyles.authors.list}>
                             {paper.authors.map((author: string, idx: number) => (
                                 <li key={idx} style={adminStyles.authors.item}>
                                     <button
@@ -463,7 +469,7 @@ const PaperRow = React.memo(({
                 </div>
                 <div className='col-1'>
                     <div className='w-100'>
-                        <ul className='list-unstyled mb-0'>
+                        <ul className='list-unstyled'>
                             {paper.ratings.map((rating: number, idx: number) => (
                                 <li key={idx} style={getIndividualRatingColor(rating)}>
                                     {rating}
@@ -478,7 +484,7 @@ const PaperRow = React.memo(({
                     </div>
                 </div>
                 <div className='col-2'>
-                    <span className="badge rounded-pill px-3 py-2" 
+                    <span className="badge rounded-pill px-3" 
                           style={{ ...getDecisionColors(paper.decision), ...adminStyles.badge.decision }}>
                         {paper.decision}
                     </span>
@@ -671,7 +677,7 @@ function AdminHome() {
 
     return (
     <div style={adminStyles.container}>
-        <div className='ms-4 py-2 d-flex justify-content-between align-items-center' > 
+        <div className='ms-4 mb-2 py-2 d-flex justify-content-between align-items-center' > 
             <ConferenceDropdown />
             <div className="d-flex align-items-center gap-4">
                 <Pagination 
@@ -752,7 +758,9 @@ function AdminHome() {
                         </div>
                         <div className="d-flex justify-content-end px-4 mt-2" style={{
                             borderBottom: '1px solid #e9ecef',
-                            backgroundColor: '#ffffff'
+                            backgroundColor: '#ffffff',
+                            borderBottomLeftRadius: '8px',
+                            borderBottomRightRadius: '8px'
                         }}>
                             <RebuttalToggle
                                 checked={pub_rebuttal}
