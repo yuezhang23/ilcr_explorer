@@ -28,16 +28,20 @@ export const createSubmissions = (submissions) => {
 export const getAllSubmissions = () => getCurrentModel().find();
 
 export const getAllSubmissionsWithPartialMetareviews = () => getCurrentModel().find({}, { 
-  "metareviews.values.summary": 0,
-  "metareviews.values.soundness": 0,
-  "metareviews.values.presentation": 0,
-  "metareviews.values.contribution": 0,
-  "metareviews.values.strengths": 0,
-  "metareviews.values.weaknesses": 0,
-  "metareviews.values.questions": 0,
-  "metareviews.values.limitations": 0,
-  "metareviews.rebuttal": 0
-});
+  s_id: 1,
+  authors: 1,
+  title: 1,
+  abstract: 1,
+  year: 1,
+  url: 1,
+  decision: 1,
+  "metareviews.values.soundness": 1,
+  "metareviews.values.presentation": 1,
+  "metareviews.values.contribution": 1,
+  "metareviews.values.rating": 1,
+  "metareviews.values.confidence": 1,
+  "metareviews.values.decision": 1
+}).lean();
 
 export const getAllBibData = () => getCurrentModel().find({}).select({ url: 1, title: 1, abstract: 1, authors: 1, year: 1, decision: 1 });
 

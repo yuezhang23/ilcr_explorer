@@ -96,8 +96,8 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({
                 }}
                 disabled={disabled || isLoading}
                 style={{
-                    backgroundColor: '#f8f9fa',
-                    border: '1px solid #dee2e6',
+                    backgroundColor: 'transparent',
+                    border: 'none',
                     borderRadius: '8px',
                     color: '#495057',
                     transition: 'all 0.2s ease',
@@ -106,15 +106,11 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({
                 }}
                 onMouseEnter={(e) => {
                     if (!isLoading && !disabled) {
-                        e.currentTarget.style.backgroundColor = '#e9ecef';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
                         handleButtonMouseEnter(e);
                     }
                 }}
                 onMouseLeave={(e) => {
                     if (!isLoading && !disabled) {
-                        e.currentTarget.style.backgroundColor = '#f8f9fa';
-                        e.currentTarget.style.transform = 'translateY(0)';
                         handleButtonMouseLeave();
                     }
                 }}

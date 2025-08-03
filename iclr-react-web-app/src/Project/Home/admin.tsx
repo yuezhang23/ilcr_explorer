@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ProjectState } from '../store';
 import * as home from './home';
@@ -22,8 +22,9 @@ import {
 import './styles/admin.css';
 import Leaderboard from './components/Leaderboard';
 import PromptDropdown from './components/PromptDropdown';
-import ConferenceDropdown from './components/ConferenceDropdown';
 import RebuttalToggle from './components/RebuttalToggle';
+import PromptInputModal from './components/PromptInputModal';
+import ConfirmationModal from './components/ConfirmationModal';
 axios.defaults.withCredentials = true;
 
 // Helper function to process papers data
@@ -169,7 +170,7 @@ const Pagination = React.memo(({
                         e.currentTarget.style.boxShadow = '0 2px 4px rgba(220, 38, 38, 0.1)';
                     }}
                 >
-                    Clear Search
+                    Clear
                 </button>
             )}
             {totalRecords > 0 && (
@@ -541,8 +542,6 @@ function AdminHome() {
     const [pub_rebuttal, setPubRebuttal] = useState<boolean>(false);
     
     
-
-    
     // Memoize expensive computations
     const processedBib = useMemo(() => processPapersData(bib), [bib]);
     const totalPages = useMemo(() => Math.ceil(totalRecords / recordsPerPage), [totalRecords, recordsPerPage]);
@@ -632,10 +631,7 @@ function AdminHome() {
 
     useEffect(() => {
         setPageInput(currentPage.toString());
-    }, [currentPage]);
-    
-
-    
+    }, [currentPage]);  
 
     const goToNextPage = useCallback(() => {
         if (currentPage < totalPages) {
@@ -677,47 +673,34 @@ function AdminHome() {
 
     return (
     <div style={adminStyles.container}>
-        <div className='ms-4 mb-2 py-2 d-flex justify-content-between align-items-center' > 
-            <ConferenceDropdown />
-            <div className="d-flex align-items-center gap-4">
-                <Pagination 
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalRecords={totalRecords}
-                    pageInput={pageInput}
-                    setPageInput={setPageInput}
-                    goToNextPage={goToNextPage}
-                    goToPreviousPage={goToPreviousPage}
-                    setCurrentPage={setCurrentPage}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                />
-                <SearchBar 
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                />
-                <div className="d-flex align-items-center">
-                    <Link
-                        to="/Home/Analytics"
-                        className="btn btn-sm mx-2"
-                        style={adminStyles.analyticsButton}
-                        onMouseEnter={(e) => {
-                            Object.assign(e.currentTarget.style, adminStyles.analyticsButtonHover);
-                        }}
-                        onMouseLeave={(e) => {
-                            Object.assign(e.currentTarget.style, adminStyles.analyticsButton);
-                        }}
-                        >
-                        Analytics
-                    </Link>
-                </div>
-            </div>
-        </div>
+   
+        <div className='py-2 d-flex justify-content-center' > 
         <div className='d-flex' style={{ height: 'calc(100vh - 150px)', overflow: 'hidden' }}>
             <div className='col-2 d-none d-lg-block me-3 d-flex flex-column'>
+                <div className='d-flex mb-3' style={{ 
+                    minHeight: '45px'
+                }}> </div>
                 <Leaderboard onPaperClick={setSearchTerm} />
             </div> 
             <div className='col-10 flex-grow-1 d-flex flex-column' style={{ overflow: 'hidden' }}>
+                <div className="d-flex mb-3 justify-content-center align-items-center gap-4">
+                    <Pagination 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalRecords={totalRecords}
+                        pageInput={pageInput}
+                        setPageInput={setPageInput}
+                        goToNextPage={goToNextPage}
+                        goToPreviousPage={goToPreviousPage}
+                        setCurrentPage={setCurrentPage}
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                    />
+                    <SearchBar 
+                        searchTerm={searchTerm}
+                        setSearchTerm={setSearchTerm}
+                    />
+                </div>
                 <div className="flex-grow-1 d-flex flex-column" style={{ overflow: 'hidden' }}>
                     <div className="card border-0 shadow-lg flex-grow-1 d-flex flex-column" style={{ ...adminStyles.table.card, overflow: 'hidden' }}> 
                         <div className="card-header" 
@@ -750,6 +733,16 @@ function AdminHome() {
                                                 isLoading={isLoadingPredictions}
                                                 showTooltip={true}
                                                 tooltipPosition="left"
+                                                buttonStyle={{
+                                                    color: 'white',
+                                                    padding: '6px 12px',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: 500,
+                                                    borderRadius: '16px',
+                                                    transition: 'all 0.2s ease',
+                                                    minWidth: '100px',
+                                                    backgroundColor:"transparent"
+                                                }}
                                             />
                                         </div>
                                     </div>
@@ -812,139 +805,40 @@ function AdminHome() {
                 </div>
             </div>
         </div>
+        </div>
+
 
         {/* Modal for prompt input - rendered outside table structure */}
-        {openModalPaper && (
-            <div style={adminStyles.modal.overlay}>
-                <div style={adminStyles.modal.container}>
-                    <h4 className="mb-4 text-center" style={adminStyles.modal.title}>
-                        Prompting ... 
-                    </h4>
-                    <div style={adminStyles.modal.textareaContainer}>
-                        <textarea
-                            className="form-control mb-4"
-                            rows={10}
-                            value={userPrompt}
-                            onChange={e => setUserPrompt(e.target.value)}
-                            placeholder=""
-                            style={adminStyles.modal.textarea}
-                            autoFocus
-                        />
-                        {!userPrompt && (
-                            <div style={adminStyles.modal.placeholder}>
-                                Enter your custom prompt or leave blank to use the default prompt:
-                                <br />
-                                <div style={adminStyles.modal.placeholderText}>{currentPrompt}</div>
-                            </div>
-                        )}
-                    </div>
-                    <div className="d-flex gap-3 justify-content-end">
-                        <button 
-                            className="btn btn-outline-secondary px-4 py-2" 
-                            onClick={() => {
-                                setOpenModalPaper(null);
-                            }}
-                            style={adminStyles.modal.button}
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            className="btn btn-primary px-4 py-2" 
-                            onClick={() => {
-                                if (openModalPaper) {    
-                                    setUserPrompt(userPrompt !== "" ? userPrompt : currentPrompt);
-                                    setConfirmationPrompt(util.prompt_tmp.replace("{{ task }}", userPrompt !== "" ? userPrompt : currentPrompt));
-                                    setShowConfirmationModal(true);
-                                }
-                            }}
-                            style={adminStyles.modal.submitButton}
-                        >
-                            Submit
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
+        <PromptInputModal
+            openModalPaper={openModalPaper}
+            userPrompt={userPrompt}
+            setUserPrompt={setUserPrompt}
+            currentPrompt={currentPrompt}
+            setOpenModalPaper={setOpenModalPaper}
+            onConfirm={() => {
+                if (openModalPaper) {    
+                    setUserPrompt(userPrompt !== "" ? userPrompt : currentPrompt);
+                    setConfirmationPrompt(util.prompt_tmp.replace("{{ task }}", userPrompt !== "" ? userPrompt : currentPrompt));
+                    setShowConfirmationModal(true);
+                }
+            }}
+        />
 
         {/* Confirmation Modal for prompt review */}
-        {showConfirmationModal && (
-            <div style={adminStyles.modal.overlay}>
-                <div style={adminStyles.modal.container}>
-                    <h4 className="mb-4 text-center" style={adminStyles.modal.title}>
-                        Confirm Template
-                    </h4>
-                    <div className="mb-3">
-                        <label className="form-label fw-bold">Paper Title:</label>
-                        <div className="text-muted">
-                            {openModalPaper?.url ? (
-                                <a href={openModalPaper.url} target="_blank" rel="noopener noreferrer" style={adminStyles.modal.link}>
-                                    {openModalPaper.title}
-                                </a>
-                            ) : (
-                                openModalPaper?.title
-                            )}
-                        </div>
-                    </div>
-                    <div style={adminStyles.modal.textareaContainer}>
-                        <label className="form-label fw-bold">Prompt Template:</label>
-                          {/* Info message for Rebuttal toggle */}
-                          <div style={adminStyles.infoMessage}>
-                            the following {'{text}'} under Prediction will be replaced with complete official reviews.
-                        </div>
-                        <br />
-                        <textarea
-                            className="form-control mb-4"
-                            rows={8}
-                            value={confirmationPrompt}
-                            onChange={e => setConfirmationPrompt(e.target.value)}
-                            placeholder="Enter your prompt here..."
-                            style={adminStyles.modal.textarea}
-                            autoFocus
-                        />
-                    </div>
-                    <div className="form-check mb-3 d-flex align-items-center">
-                        <input
-                            className="form-check-input me-2"
-                            type="checkbox"
-                            id="rebuttalToggle"
-                            checked={user_rebuttal}
-                            onChange={() => setUserRebuttal(!user_rebuttal)}
-                        />
-                        <label className="form-check-label fw-bold text-danger mb-0" htmlFor="rebuttalToggle">
-                            Rebuttal
-                        </label>
-                        {/* Info message for Rebuttal toggle */}
-                        <div style={adminStyles.infoMessage} className="ms-2">
-                            {user_rebuttal
-                                ? 'Rebuttal Included in {text}'
-                                : ''}
-                        </div>
-                    </div>
-                    <div className="d-flex gap-3 justify-content-end">
-                        <button 
-                            className="btn btn-outline-secondary px-4 py-2" 
-                            onClick={() => {
-                                setShowConfirmationModal(false);
-                            }}
-                            style={adminStyles.modal.button}
-                        >
-                            Back
-                        </button>
-                        <button 
-                            className="btn btn-success px-4 py-2" 
-                            onClick={() => {
-                                if (openModalPaper) {    
-                                    handlePrompting(openModalPaper.url, openModalPaper._id, user_rebuttal ? 1 : 0);
-                                }
-                            }}
-                            style={adminStyles.modal.confirmSubmitButton}
-                        >
-                            Submit 
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
+        <ConfirmationModal
+            showConfirmationModal={showConfirmationModal}
+            openModalPaper={openModalPaper}
+            confirmationPrompt={confirmationPrompt}
+            setConfirmationPrompt={setConfirmationPrompt}
+            user_rebuttal={user_rebuttal}
+            setUserRebuttal={setUserRebuttal}
+            setShowConfirmationModal={setShowConfirmationModal}
+            onConfirm={() => {
+                if (openModalPaper) {    
+                    handlePrompting(openModalPaper.url, openModalPaper._id, user_rebuttal ? 1 : 0);
+                }
+            }}
+        />
 
 
  

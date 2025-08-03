@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import PredictionMismatchTable from './PredictionMismatchTable';
 
 interface PredictionErrorsProps {
@@ -6,6 +6,8 @@ interface PredictionErrorsProps {
   rebuttalPredictionsMap: Map<string, string>;
   nonRebuttalPredictionsMap: Map<string, string>;
   currentPrompt: string;
+  showMismatch: boolean;
+  setShowMismatch: (show: boolean) => void;
 }
 
 interface ErrorDetail {
@@ -39,8 +41,9 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   rebuttalPredictionsMap,
   nonRebuttalPredictionsMap,
   currentPrompt,
+  showMismatch,
+  setShowMismatch,
 }) => {
-  const [showMismatch, setShowMismatch] = useState(false);
 
   // Helper function to get decision from paper
   const getDecision = (paper: any): string => {
@@ -266,19 +269,8 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
           <div className="row">
             <PredictionMismatchTable 
               predictionMismatches={predictionMismatches}
+              setShowMismatch={setShowMismatch}
             />
-          </div>
-          <div className="row mt-3">
-            <div className="col-12">
-              <div className="d-flex justify-content-center">
-                <NavButton 
-                  onClick={() => setShowMismatch(false)}
-                  bgColor="rgba(108, 117, 125, 0.81)"
-                >
-                  Back to Summary
-                </NavButton>
-              </div>
-            </div>
           </div>
         </>
       )}

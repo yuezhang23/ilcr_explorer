@@ -41,5 +41,11 @@ const submissioSchema = new mongoose.Schema(
     });
 
 
+// Add indexes for better query performance
+submissioSchema.index({ s_id: 1 });
+submissioSchema.index({ year: 1 });
+submissioSchema.index({ decision: 1 });
+submissioSchema.index({ url: 1 });
+
 // Default export for backward compatibility
 export default submissioSchema;

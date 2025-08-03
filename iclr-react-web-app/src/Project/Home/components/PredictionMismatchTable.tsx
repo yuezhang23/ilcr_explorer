@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
+import NavButton from './NavButton';
 
 interface PredictionMismatchTableProps {
   predictionMismatches: ErrorDetail[];
+  setShowMismatch: (show: boolean) => void;
 }
 
 interface ErrorDetail {
@@ -24,6 +26,7 @@ interface Filters {
 
 const PredictionMismatchTable: React.FC<PredictionMismatchTableProps> = ({
   predictionMismatches,
+  setShowMismatch,
 }) => {
   const [filters, setFilters] = useState<Filters>({
     nonRebuttalPrediction: '',
@@ -112,7 +115,6 @@ const PredictionMismatchTable: React.FC<PredictionMismatchTableProps> = ({
           boxShadow: '0 2px 8px rgba(220, 53, 69, 0.15)'
         };
       } else if (currentValue && column === 'rating') {
-        // Rating filter styles
         return {
           ...baseStyle,
           backgroundColor: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
@@ -169,13 +171,26 @@ const PredictionMismatchTable: React.FC<PredictionMismatchTableProps> = ({
               <i className="fas fa-exclamation-triangle me-2" style={{ color: '#f39c12' }}></i>
               Prediction Mismatches ({filteredMismatches.length} of {predictionMismatches.length})
             </span>
+            <NavButton 
+              onClick={() => setShowMismatch(false)}
+              bgColor="rgba(108, 117, 125, 0.81)"
+            >
+              To Summary
+            </NavButton>
           </h6>
         </div>
         <div className="card-body p-0">
           {predictionMismatches.length > 0 ? (
-            <div className="table-responsive" style={{ maxHeight: '400px', minHeight: '220px', overflowY: 'auto', marginTop: '10px' }}>
+            <div className="table-responsive" style={{ maxHeight: '400px', minHeight: '220px', overflowY: 'auto', marginTop: '10px', position: 'relative' }}>
               <table className="table table-sm table-hover mb-0">
-                <thead className="sticky-top mt-4" style={{ backgroundColor: '#e9ecef', borderBottom: '2px solid #dee2e6', paddingTop: '10px' }}>
+                <thead style={{ 
+                  position: 'sticky', 
+                  top: 0, 
+                  zIndex: 1,
+                  backgroundColor: '#e9ecef', 
+                  borderBottom: '2px solid #dee2e6', 
+                  paddingTop: '10px' 
+                }}>
                   <tr>
                     <th style={{ 
                       width: '35%',

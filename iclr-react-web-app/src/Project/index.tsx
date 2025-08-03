@@ -23,7 +23,7 @@ export default function Project() {
           <Routes>
               <Route path="/" element={<Navigate to="Home" />} />
               <Route path="Home/*" element={<Home />} />
-              {/* <Route path="Analytics/*" element={<RatingHome/>} /> */}
+              <Route path="Analytics/*" element={<RatingHome/>} />
               <Route path="Search" element={<Search />} />
               <Route path="User/Signin" element={<Signin />} />
               <Route path="User/Signup" element={<Signup />} />

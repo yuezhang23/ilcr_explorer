@@ -6,11 +6,11 @@ import * as home from './home';
 import axios from "axios";
 import { setIclr, setIclrName } from '../Reducers/iclrReducer';
 import { setCurrentPreds, setRebuttalPreds, setNonRebuttalPreds } from '../Reducers/predictionReducer';
-import { useYear } from '../../contexts/YearContext';
+import { useYear, useYearDependentFetch, useYearDependentFetchSimple } from '../../contexts/YearContext';
 import { adminStyles } from './styles/adminStyles';
 import { ratingStyles } from './styles/ratingStyles';
 import './styles/admin.css';
-import RatingDistributionChart from './components/RatingDistributionChart';
+import RatingDistributionChart from './components/DistributionChart';
 import PredictionErrors from './components/PredictionErrors';
 import YearSelector from '../../components/YearSelector';
 import PromptDropdown from './components/PromptDropdown';
@@ -23,6 +23,9 @@ function processPapersData(data: any[]) {
         const {metareviews, ...bib} = m;
         const ratings = [];
         const confidences = [];
+        const soundnesses = [];
+        const presentations = [];
+        const contributions = [];
         const decisions = [];
 
         for (const o of metareviews) {
@@ -38,6 +41,24 @@ function processPapersData(data: any[]) {
                     confidences.push(confidenceValue);
                 }
             }
+            if (o.values && o.values.soundness) {
+                const soundnessValue = parseFloat(o.values.soundness);
+                if (!isNaN(soundnessValue)) {
+                    soundnesses.push(soundnessValue);
+                }
+            }
+            if (o.values && o.values.presentation) {
+                const presentationValue = parseFloat(o.values.presentation);
+                if (!isNaN(presentationValue)) {
+                    presentations.push(presentationValue);
+                }
+            }
+            if (o.values && o.values.contribution) {
+                const contributionValue = parseFloat(o.values.contribution);
+                if (!isNaN(contributionValue)) {
+                    contributions.push(contributionValue);
+                }
+            }
             if (o.values && o.values.decision) {
                 const decisionValue = o.values.decision.toLowerCase() === 'no' || o.values.decision.toLowerCase() === 'reject' ? 'Reject' : 'Accept';
                 if (decisionValue) {
@@ -48,13 +69,22 @@ function processPapersData(data: any[]) {
         
         const rating = ratings.length > 0 ? parseFloat((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)) : 0;
         const confidence = confidences.length > 0 ? parseFloat((confidences.reduce((a, b) => a + b, 0) / confidences.length).toFixed(2)) : 0;
+        const soundness = soundnesses.length > 0 ? parseFloat((soundnesses.reduce((a, b) => a + b, 0) / soundnesses.length).toFixed(2)) : 0;
+        const presentation = presentations.length > 0 ? parseFloat((presentations.reduce((a, b) => a + b, 0) / presentations.length).toFixed(2)) : 0;
+        const contribution = contributions.length > 0 ? parseFloat((contributions.reduce((a, b) => a + b, 0) / contributions.length).toFixed(2)) : 0;
 
         return {
             ...bib,
             rating,
             confidence,
+            soundness,
+            presentation,
+            contribution,
             ratings,
             confidences,
+            soundnesses,
+            presentations,
+            contributions,
             decisions
         };
     });
@@ -65,8 +95,8 @@ function RatingHome() {
     const {currentPreds, rebuttalPreds, nonRebuttalPreds} = useSelector((state: ProjectState) => state.predictionReducer)
     const dispatch = useDispatch();
     
-    // Use global year context instead of local state
-    const { currentYear, availableYears, setYear: setGlobalYear } = useYear();
+    // Only destructure currentYear to avoid unnecessary re-renders
+    const { currentYear } = useYear();
     
     const [allPapers, setAllPapers] = useState<any[]>([]); // For plot data
     
@@ -78,10 +108,9 @@ function RatingHome() {
     const [pub_rebuttal, setPubRebuttal] = useState<boolean>(false);
     const [field, setField] = useState<string>("rating");
 
-
-    
     // State for view toggle
     const [showPredictionErrors, setShowPredictionErrors] = useState<boolean>(false);
+    const [showMismatch, setShowMismatch] = useState<boolean>(false);
     
     // Memoize expensive computations
     const processedAllPapers = useMemo(() => processPapersData(allPapers), [allPapers]);
@@ -124,8 +153,8 @@ function RatingHome() {
         return home.PROMPT_CANDIDATES.findIndex(p => p === currentPrompt) + 1;
     }, [currentPrompt]);
 
-    // Fetch all data for plot (no pagination) - ADD currentYear dependency
-    const fetchAllData = useCallback(async () => {
+    // Optimized data fetching with caching and error handling
+    const fetchAllData = useYearDependentFetchSimple(async () => {
         setIsLoadingAllData(true);
         try {
             const result = await home.findAllIclrSubmissionsWithPartialMetareviews();
@@ -137,10 +166,10 @@ function RatingHome() {
         } finally {
             setIsLoadingAllData(false);
         }
-    }, [dispatch, currentYear]);
+    });
 
-    // Separate function for fetching predictions for all papers - ADD currentYear dependency
-    const fetchPredictionsForAllPapers = useCallback(async (papers: any[], prompt: string, rebuttal: boolean) => {
+    // Use custom hook for year-dependent prediction fetching
+    const fetchPredictionsForAllPapers = useYearDependentFetch(async (prompt: string, rebuttal: boolean) => {
         setIsLoadingPredictions(true);
         try {
             // Always fetch both rebuttal and non-rebuttal predictions
@@ -174,7 +203,7 @@ function RatingHome() {
         } finally {
             setIsLoadingPredictions(false);
         }
-    }, [dispatch, currentYear]);
+    }, [currentPrompt, pub_rebuttal]);
 
     // Main data fetching effect - fetch all data for plot
     useEffect(() => {
@@ -184,7 +213,7 @@ function RatingHome() {
     // Effect to fetch predictions when all papers change or prompt changes
     useEffect(() => {
         if (allPapers.length > 0) {
-            fetchPredictionsForAllPapers(allPapers, currentPrompt, pub_rebuttal);
+            fetchPredictionsForAllPapers(currentPrompt, pub_rebuttal);
         }
     }, [allPapers, currentPrompt, fetchPredictionsForAllPapers]);
     
@@ -196,10 +225,6 @@ function RatingHome() {
         }
     }, [pub_rebuttal, rebuttalPreds, nonRebuttalPreds, dispatch]);
     
-
-
-
-
     return (
     <div style={{...adminStyles.container, ...ratingStyles.container}} className="p-2 mt-4">
         <div className="d-flex gap-4 m-0">
@@ -215,36 +240,64 @@ function RatingHome() {
                     <h6 className="mb-0">Prompt Controls</h6>
                 </div>
                 <div className="card-body p-4" style={ratingStyles.leftMenuBody}>
-                    <div className="mb-3 mb-3" >
+                    {/* <div className="mb-3 mb-3" >
                         <YearSelector showLabel={true} />
-                    </div>
+                    </div> */}
                     <div className="d-flex flex-column gap-4">
                         <div className="w-100">
                             <div className="d-flex flex-column" style={ratingStyles.formControlContainer}>
-                                <label className="form-label mb-2" style={ratingStyles.formLabel}>
-                                    Select Prompt:
-                                </label>
-                                <PromptDropdown
+                                 <PromptDropdown
                                     currentPrompt={currentPrompt}
                                     onPromptChange={setCurrentPrompt}
                                     isLoading={isLoadingPredictions}
                                     showTooltip={true}
                                     tooltipPosition="right"
-                                    buttonStyle={{ width: '100%' }}
-                                    className="w-100"
+                                    buttonStyle={{
+                                        color: 'black',
+                                        padding: '6px 12px',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 500,
+                                        borderRadius: '16px',
+                                        transition: 'all 0.2s ease',
+                                        minWidth: '100px'
+                                    }}
+                                    // primaryColor="white"
+                                    // lightBackgroundColor="transparent"
                                 />
                             </div>
-                            <div className="mt-2 text-danger fst-italic" style={ratingStyles.promptInfo}>
+                            <div className="mt-2 ms-2 text-danger fst-italic" style={ratingStyles.promptInfo}>
                                 {currentPrompt}
                             </div>
                         </div>
 
+                    </div>
+                    <div className="d-flex flex-column gap-4">
+                        
                     </div>
                 </div>
             </div>
             
             {/* Main Content Area */}
             <div className="flex-grow-1" style={ratingStyles.mainContent}>
+                {/* Loading state for paper data */}
+                {isLoadingAllData && (
+                    <div className="card border-0 shadow-lg" style={adminStyles.table.card}>
+                        <div className="card-header border-0 py-3" style={adminStyles.table.header}>
+                            <h6 className="mb-0">Loading Paper Data</h6>
+                        </div>
+                        <div className="card-body p-4">
+                            <div className="d-flex justify-content-center align-items-center" style={ratingStyles.loadingContainer}>
+                                <div className="text-center">
+                                    <div className="spinner-border text-primary" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                    <div className="mt-3 text-muted">Loading paper data...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
                 {/* Rating Distribution Chart */}
                 {!isLoadingAllData && processedAllPapers.length > 0 && (
                     <div className="card border-0 shadow-lg" style={adminStyles.table.card}>
@@ -291,6 +344,8 @@ function RatingHome() {
                                     rebuttalPredictionsMap={rebuttalPredictionsMap}
                                     nonRebuttalPredictionsMap={nonRebuttalPredictionsMap}
                                     currentPrompt={currentPrompt}
+                                    showMismatch={showMismatch}
+                                    setShowMismatch={setShowMismatch}
                                 />
                             ) : (
                                 <RatingDistributionChart 

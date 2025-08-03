@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import axios from 'axios';
 
 interface YearContextType {
@@ -16,6 +16,34 @@ export const useYear = () => {
     throw new Error('useYear must be used within a YearProvider');
   }
   return context;
+};
+
+// Custom hook for year-dependent data fetching (with parameters)
+export const useYearDependentFetch = function<T extends any[], R>(
+  fetchFunction: (...args: T) => Promise<R>,
+  dependencies: any[] = []
+) {
+  const { currentYear } = useYear();
+  
+  const memoizedFetch = useCallback(async (...args: T) => {
+    return await fetchFunction(...args);
+  }, [currentYear, ...dependencies]);
+  
+  return memoizedFetch;
+};
+
+// Custom hook for year-dependent data fetching (without parameters)
+export const useYearDependentFetchSimple = function<R>(
+  fetchFunction: () => Promise<R>,
+  dependencies: any[] = []
+) {
+  const { currentYear } = useYear();
+  
+  const memoizedFetch = useCallback(async () => {
+    return await fetchFunction();
+  }, [currentYear, ...dependencies]);
+  
+  return memoizedFetch;
 };
 
 interface YearProviderProps {
@@ -61,12 +89,13 @@ export const YearProvider: React.FC<YearProviderProps> = ({ children }) => {
     }
   };
 
-  const value: YearContextType = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value: YearContextType = useMemo(() => ({
     currentYear,
     availableYears,
     setYear,
     loading
-  };
+  }), [currentYear, availableYears, loading]);
 
   return (
     <YearContext.Provider value={value}>

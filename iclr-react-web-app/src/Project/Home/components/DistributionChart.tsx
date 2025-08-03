@@ -73,6 +73,11 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       const nonRebuttalPrediction = nonRebuttalPredictionsMap?.get(paper._id);
       const decision = paper.decision === 'Reject' ? 'Reject' : 'Accept';
       
+      // Skip papers with invalid field values
+      if (field_value === undefined || field_value === null || isNaN(field_value)) {
+        return;
+      }
+      
       // Find the appropriate bin
       const binIndex = Math.floor(field_value);
       if (binIndex >= 0 && binIndex < bins.length) {
@@ -124,7 +129,11 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     const totalNonRebuttalAccepts = bins.reduce((sum, bin) => sum + bin.nonRebuttalAcceptCount, 0);
     const totalNonRebuttalRejects = bins.reduce((sum, bin) => sum + bin.nonRebuttalRejectCount, 0);
     
-    const avgField = papers.reduce((sum, paper) => sum + paper[field], 0) / totalPapersWithPredictions;
+    const validPapers = papers.filter(paper => {
+      const field_value = paper[field];
+      return field_value !== undefined && field_value !== null && !isNaN(field_value);
+    });
+    const avgField = validPapers.length > 0 ? validPapers.reduce((sum, paper) => sum + paper[field], 0) / validPapers.length : 0;
 
     // Log bin summary for debugging
     console.log('Bin summary:', bins.map((bin, i) => ({
@@ -271,8 +280,8 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       } 
     );
 
-    // Add trending curves for acceptance rates (only for rating field)
-    if (field === 'rating') {
+    // Add trending curves for acceptance rates (for all fields)
+    if (field === 'rating' || field === 'confidence' || field === 'soundness' || field === 'presentation' || field === 'contribution') {
       datasets.push(
         {
           label: 'Non-Rebuttal Acceptance Rate (%)',
@@ -486,10 +495,10 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       },
       y1: {
         type: 'linear' as const,
-        display: field === 'rating',
+        display: field === 'rating' || field === 'confidence' || field === 'soundness' || field === 'presentation' || field === 'contribution',
         position: 'right' as const,
         title: {
-          display: field === 'rating',
+          display: field === 'rating' || field === 'confidence' || field === 'soundness' || field === 'presentation' || field === 'contribution',
           text: 'Acceptance Rate (%)',
           font: {
             weight: 'bold' as const,
@@ -517,20 +526,21 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
   return (
     <div>
       {/* Chart Controls */}
-      <div className="mb-2 bg-light rounded">
-        <div className="d-flex justify-content-end align-items-center">
-            <div>
-              <select
-                className="form-select form-select-sm"
-                value={fieldValue}
-                onChange={(e) => setField(e.target.value)}
-                style={{ fontSize: '0.9rem', width: 'auto', minWidth: '120px' }}
+      <div className="mb-2 bg-light rounded p-2">
+        <div className="d-flex justify-content-end">
+          <div className="d-flex gap-1">
+            {['rating', 'confidence', 'soundness', 'presentation', 'contribution'].map((option) => (
+              <button
+                key={option}
+                className={`btn btn-sm ${fieldValue === option ? 'btn-primary' : 'btn-outline-secondary'}`}
+                onClick={() => setField(option)}
                 disabled={isLoadingPredictions}
+                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
               >
-                <option value="rating">Rating</option>
-                <option value="confidence">Confidence</option>
-              </select>
-            </div>
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       
