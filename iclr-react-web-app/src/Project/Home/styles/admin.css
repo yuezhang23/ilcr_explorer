@@ -133,4 +133,11 @@ div.dropdown-menu.show,
 /* Loading spinner spacing */
 .spinner-border-sm {
   margin-right: 0.5rem !important;
+}
+
+/* Custom prompt textarea focus state */
+.prompt-textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  outline: none !important;
 } 

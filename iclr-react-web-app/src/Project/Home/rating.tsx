@@ -12,8 +12,10 @@ import { ratingStyles } from './styles/ratingStyles';
 import './styles/admin.css';
 import RatingDistributionChart from './components/DistributionChart';
 import PredictionErrors from './components/PredictionErrors';
-import YearSelector from '../../components/YearSelector';
 import PromptDropdown from './components/PromptDropdown';
+import ConfirmationModal from './components/ConfirmationModal';
+import * as util from './utility';
+
 axios.defaults.withCredentials = true;
 
 // Helper function to process papers data
@@ -27,7 +29,6 @@ function processPapersData(data: any[]) {
         const presentations = [];
         const contributions = [];
         const decisions = [];
-
         for (const o of metareviews) {
             if (o.values && o.values.rating) {
                 const ratingValue = parseFloat(o.values.rating);
@@ -90,10 +91,12 @@ function processPapersData(data: any[]) {
     });
 }
 
+
 function RatingHome() {
     const {currentIclrName} = useSelector((state: ProjectState) => state.iclrReducer)
     const {currentPreds, rebuttalPreds, nonRebuttalPreds} = useSelector((state: ProjectState) => state.predictionReducer)
     const dispatch = useDispatch();
+    
     
     // Only destructure currentYear to avoid unnecessary re-renders
     const { currentYear } = useYear();
@@ -103,10 +106,13 @@ function RatingHome() {
     // Loading states
     const [isLoadingAllData, setIsLoadingAllData] = useState<boolean>(false);
     const [isLoadingPredictions, setIsLoadingPredictions] = useState<boolean>(false);
-
+    
     const [currentPrompt, setCurrentPrompt] = useState<string>(home.BASIC_PROMPT);
     const [pub_rebuttal, setPubRebuttal] = useState<boolean>(false);
     const [field, setField] = useState<string>("rating");
+    const [promt_n, setPromt_n] = useState<string>(currentPrompt);
+    const [size, setSize] = useState<string>("200");
+    const [showConfirmationModal, setShowConfirmationModal] = useState<boolean>(false);
 
     // State for view toggle
     const [showPredictionErrors, setShowPredictionErrors] = useState<boolean>(false);
@@ -240,15 +246,15 @@ function RatingHome() {
                     <h6 className="mb-0">Prompt Controls</h6>
                 </div>
                 <div className="card-body p-4" style={ratingStyles.leftMenuBody}>
-                    {/* <div className="mb-3 mb-3" >
-                        <YearSelector showLabel={true} />
-                    </div> */}
                     <div className="d-flex flex-column gap-4">
                         <div className="w-100">
                             <div className="d-flex flex-column" style={ratingStyles.formControlContainer}>
                                  <PromptDropdown
                                     currentPrompt={currentPrompt}
-                                    onPromptChange={setCurrentPrompt}
+                                    onPromptChange={(prompt: string) => {
+                                        setCurrentPrompt(prompt);
+                                        setPromt_n(prompt);
+                                    }}
                                     isLoading={isLoadingPredictions}
                                     showTooltip={true}
                                     tooltipPosition="right"
@@ -261,18 +267,63 @@ function RatingHome() {
                                         transition: 'all 0.2s ease',
                                         minWidth: '100px'
                                     }}
-                                    // primaryColor="white"
-                                    // lightBackgroundColor="transparent"
                                 />
                             </div>
-                            <div className="mt-2 ms-2 text-danger fst-italic" style={ratingStyles.promptInfo}>
-                                {currentPrompt}
+                            <div className="mt-3">
+                                <textarea
+                                    className="form-control prompt-textarea"
+                                    value={promt_n || currentPrompt}
+                                    onChange={(e) => setPromt_n(e.target.value)}
+                                    placeholder={currentPrompt}
+                                    style={ratingStyles.promptTextarea}
+                                    rows={20}
+                                />
+                                {/* <div className="mt-1 text-muted" style={ratingStyles.promptInfo}>
+                                    <small>Edit the prompt above to customize predictions</small>
+                                </div> */}
+                            </div>
+                            <div className="d-flex align-items-center mt-3" style={adminStyles.prediction.container}>
+                                <button 
+                                    className="btn btn-sm rounded-pill btn-primary" 
+                                    onClick={() => setShowConfirmationModal(true)}
+                                    style={{
+                                        backgroundColor: '#3b82f6',
+                                        borderColor: '#3b82f6',
+                                        color: 'white',
+                                        fontWeight: '500',
+                                        padding: '6px 16px',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    Prompt
+                                </button>
+                                <div className="ms-2 d-flex align-items-center gap-1">
+                                    <label 
+                                        htmlFor="size-input" 
+                                        className="form-label ms-3"
+                                        style={{
+                                            fontSize: '0.875rem',
+                                            fontWeight: '500',
+                                            color: '#6b7280'
+                                        }}
+                                    >
+                                        Samples
+                                    </label>
+                                    <input 
+                                        id="size-input"
+                                        type="text" 
+                                        value={size} 
+                                        onChange={(e) => setSize(e.target.value)}
+                                        className="form-control form-control-sm"
+                                        style={{ 
+                                            width: '80px',
+                                            fontSize: '0.875rem'
+                                        }}
+                                        placeholder="200"
+                                    />
+                                </div>
                             </div>
                         </div>
-
-                    </div>
-                    <div className="d-flex flex-column gap-4">
-                        
                     </div>
                 </div>
             </div>
@@ -367,10 +418,23 @@ function RatingHome() {
                     </div>
                 )}
             </div>
-        </div>
+        </div> 
+        {showConfirmationModal && (
+            <ConfirmationModal
+                showConfirmationModal={true}
+                openModalPaper={{ title: "Custom Prompt Template", url: null }}
+                confirmationPrompt={promt_n}
+                setConfirmationPrompt={setPromt_n}
+                user_rebuttal={false}
+                setUserRebuttal={() => {}}
+                setShowConfirmationModal={setShowConfirmationModal}
+                onConfirm={() => {
+                    console.log("Prompt template submitted:", promt_n);
+                    setShowConfirmationModal(false);
+                }}
+            />
+        )}
 
-
- 
     </div>);
 }
 export default RatingHome;

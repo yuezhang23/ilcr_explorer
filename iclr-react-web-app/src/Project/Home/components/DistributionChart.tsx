@@ -280,8 +280,8 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       } 
     );
 
-    // Add trending curves for acceptance rates (for all fields)
-    if (field === 'rating' || field === 'confidence' || field === 'soundness' || field === 'presentation' || field === 'contribution') {
+    // Add trending curves for acceptance rates (only for rating field)
+    if (field === 'rating') {
       datasets.push(
         {
           label: 'Non-Rebuttal Acceptance Rate (%)',
@@ -327,7 +327,6 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           borderColor: 'rgba(52, 152, 219, 1)',
           backgroundColor: 'rgba(52, 152, 219, 0.1)',
           borderWidth: 2,
-          borderDash: [5, 5],
           pointBackgroundColor: 'rgba(52, 152, 219, 1)',
           pointBorderColor: '#fff',
           pointBorderWidth: 1,
@@ -495,10 +494,10 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       },
       y1: {
         type: 'linear' as const,
-        display: field === 'rating' || field === 'confidence' || field === 'soundness' || field === 'presentation' || field === 'contribution',
+        display: field === 'rating',
         position: 'right' as const,
         title: {
-          display: field === 'rating' || field === 'confidence' || field === 'soundness' || field === 'presentation' || field === 'contribution',
+          display: field === 'rating',
           text: 'Acceptance Rate (%)',
           font: {
             weight: 'bold' as const,

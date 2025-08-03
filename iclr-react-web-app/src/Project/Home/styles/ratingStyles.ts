@@ -43,6 +43,19 @@ export const ratingStyles = {
         fontSize: '0.8rem'
     } as CSSProperties,
     
+    promptTextarea: {
+        fontSize: '0.85rem',
+        lineHeight: '1.4',
+        border: '1px solid #e2e8f0',
+        borderRadius: '8px',
+        padding: '12px',
+        resize: 'both',
+        minHeight: '80px',
+        maxHeight: '300px',
+        fontFamily: 'inherit',
+        transition: 'border-color 0.2s ease, box-shadow 0.2s ease, height 0.2s ease'
+    } as CSSProperties,
+    
     // Main content area styles
     mainContent: {
         minWidth: 0

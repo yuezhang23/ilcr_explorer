@@ -7,9 +7,6 @@ export const adminStyles = {
     minHeight: 'calc(100vh - 80px)', // Account for Nav height
     width: '100%',
     maxWidth: '100%',
-    position: 'sticky' as const,
-    top: '80px', // Position below Nav component
-    zIndex: 999, // Below Nav's zIndex of 1000
     paddingTop: '10px', // Add some spacing from Nav
   },
 
@@ -392,10 +389,10 @@ export const adminStyles = {
     container: {
       background: 'white',
       borderRadius: '16px',
-      padding: '40px',
-      minWidth: '800px',
-      maxWidth: '90vw',
-      maxHeight: '100vh',
+      padding: '15px 30px',
+      minWidth: '600px',
+      maxWidth: '80vw',
+      maxHeight: '90vh',
       boxShadow: '0 25px 80px rgba(0,0,0,0.4)',
       position: 'relative' as const,
       zIndex: 1000000,
