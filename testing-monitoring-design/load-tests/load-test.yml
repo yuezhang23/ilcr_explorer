@@ -1,0 +1,273 @@
+config:
+  target: 'http://localhost:4000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+    
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 50
+      name: "Ramp-up"
+    
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 50
+      name: "Sustained load"
+    
+    # Peak load phase
+    - duration: 180
+      arrivalRate: 50
+      rampTo: 100
+      name: "Peak load"
+    
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 10
+      name: "Cool-down"
+  
+  # Global headers
+  headers:
+    Content-Type: 'application/json'
+    User-Agent: 'Artillery-LoadTest/1.0'
+  
+  # Environment variables
+  variables:
+    baseUrl: 'http://localhost:4000'
+    authToken: ''
+    userId: ''
+    paperId: ''
+  
+  # Plugins
+  plugins:
+    metrics-by-endpoint: {}
+    expect: {}
+  
+  # Processor for authentication
+  processor: "./auth-processor.js"
+  
+  # Custom metrics
+  ensure:
+    maxErrorRate: 5
+    maxResponseTime: 2000
+
+# Test scenarios
+scenarios:
+  # Authentication flow
+  - name: "Authentication Flow"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/user/signin"
+          json:
+            username: "{{ $randomString() }}"
+            password: "TestPass123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: [200, 401]
+            - contentType: json
+            - hasProperty: token
+    
+  # Paper retrieval scenarios
+  - name: "Paper Retrieval"
+    weight: 30
+    flow:
+      - get:
+          url: "/api/iclr"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - hasProperty: papers
+            - maxResponseTime: 1000
+          capture:
+            - json: "$.papers[0]._id"
+              as: "paperId"
+      
+      - get:
+          url: "/api/iclr/pagination/1/50"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - maxResponseTime: 500
+      
+      - get:
+          url: "/api/iclr/random"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - maxResponseTime: 300
+  
+  # Search scenarios
+  - name: "Search Operations"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/iclr/search/machine learning"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - maxResponseTime: 2000
+      
+      - get:
+          url: "/api/iclr/author/{{ $randomString(10) }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - maxResponseTime: 1500
+      
+      - get:
+          url: "/api/iclr/decision/accept"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - maxResponseTime: 1000
+  
+  # Year management scenarios
+  - name: "Year Management"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/iclr/year"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - maxResponseTime: 500
+      
+      - post:
+          url: "/api/iclr/year"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+            Content-Type: "application/json"
+          json:
+            year: 2025
+          expect:
+            - statusCode: 200
+            - maxResponseTime: 1000
+  
+  # Comments and likes scenarios
+  - name: "Comments and Likes"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/public/comments/like"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+            Content-Type: "application/json"
+          json:
+            paperId: "{{ paperId }}"
+            userId: "{{ userId }}"
+          expect:
+            - statusCode: 200
+            - maxResponseTime: 1000
+      
+      - post:
+          url: "/api/public/comments/comment"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+            Content-Type: "application/json"
+          json:
+            paperId: "{{ paperId }}"
+            userId: "{{ userId }}"
+            comment: "Load test comment {{ $randomString(20) }}"
+          expect:
+            - statusCode: 201
+            - maxResponseTime: 1500
+  
+  # Prediction scenarios
+  - name: "Prediction System"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/prompt/prediction"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+            Content-Type: "application/json"
+          json:
+            paperId: "{{ paperId }}"
+            prompt: "Will this paper be accepted?"
+          expect:
+            - statusCode: 200
+            - contentType: json
+            - maxResponseTime: 5000
+
+# Custom processor for authentication
+# This would be in a separate file: auth-processor.js
+# processor: |
+#   function authProcessor(requestParams, context, ee, next) {
+#     // Set authentication token if available
+#     if (context.vars.authToken) {
+#       requestParams.headers = requestParams.headers || {};
+#       requestParams.headers.Authorization = `Bearer ${context.vars.authToken}`;
+#     }
+#     return next();
+#   }
+
+# Performance thresholds
+ensure:
+  # Error rate should be less than 5%
+  maxErrorRate: 5
+  
+  # 95% of requests should complete within 2 seconds
+  p95: 2000
+  
+  # 99% of requests should complete within 5 seconds
+  p99: 5000
+  
+  # Average response time should be less than 1 second
+  maxResponseTime: 1000
+
+# Custom metrics
+metrics:
+  # Track response times by endpoint
+  responseTime:
+    - name: "GET /api/iclr"
+      threshold: 1000
+    - name: "GET /api/iclr/pagination"
+      threshold: 500
+    - name: "GET /api/iclr/search"
+      threshold: 2000
+    - name: "POST /api/prompt/prediction"
+      threshold: 5000
+  
+  # Track error rates
+  errorRate:
+    - name: "Overall Error Rate"
+      threshold: 5
+  
+  # Track throughput
+  throughput:
+    - name: "Requests per second"
+      threshold: 50
+
+# Reporting configuration
+reporting:
+  # Generate detailed reports
+  detailed: true
+  
+  # Include response time percentiles
+  percentiles: [50, 75, 90, 95, 99]
+  
+  # Include error breakdown
+  errors: true
+  
+  # Include custom metrics
+  custom: true 
