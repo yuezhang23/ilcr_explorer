@@ -1,0 +1,114 @@
+.prediction-dashboard {
+  min-height: 100vh;
+}
+
+.prediction-dashboard .card {
+  transition: all 0.3s ease;
+}
+
+.prediction-dashboard .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.prediction-dashboard .card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.prediction-dashboard .card-body {
+  border-radius: 0 0 12px 12px;
+}
+
+.prediction-dashboard .badge {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+}
+
+.prediction-dashboard .summary-stats .h4 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.prediction-dashboard .summary-stats .text-muted {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .prediction-dashboard .card-body {
+    padding: 1rem;
+  }
+  
+  .prediction-dashboard .summary-stats .h4 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Loading animation */
+.prediction-dashboard .loading-container {
+  min-height: 300px;
+}
+
+/* Error state */
+.prediction-dashboard .error-state {
+  padding: 2rem;
+  text-align: center;
+  color: #dc3545;
+}
+
+.prediction-dashboard .error-state i {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* Grid layout improvements */
+.prediction-dashboard .dashboard-grid {
+  margin: 0 -0.5rem;
+}
+
+.prediction-dashboard .dashboard-grid > div {
+  padding: 0 0.5rem;
+}
+
+/* Controls section styling */
+.prediction-dashboard .controls-section {
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.prediction-dashboard .controls-section .card-header {
+  background: #e9ecef;
+  color: #495057;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Summary section styling */
+.prediction-dashboard .summary-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+}
+
+.prediction-dashboard .summary-section .card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.prediction-dashboard .summary-section .h4 {
+  color: white;
+}
+
+.prediction-dashboard .summary-section .text-muted {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Override card header background for PredictionErrors component */
+.prediction-dashboard .prediction-errors-header {
+  background: transparent !important;
+  background-color: transparent !important;
+} 
