@@ -35,25 +35,8 @@ mongoose.connection.on('disconnected', () => {
 });
 
 app.use(cors({
-  credentials: true,
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      "http://localhost:3000",
-      "https://localhost:3000"
-    ].filter(Boolean); // Remove undefined values
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    // Log blocked origins for debugging
-    console.log('Blocked origin:', origin);
-    return callback(new Error('Not allowed by CORS'));
-  }
+  origin: [process.env.FRONTEND_URL, 'http://localhost:3000'],
+  credentials: true
 }));
 
 app.use(express.json({ limit: '50mb' }));
