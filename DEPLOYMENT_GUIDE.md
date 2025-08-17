@@ -14,13 +14,15 @@ Your React app is already configured with:
 1. Go to [netlify.com](https://netlify.com) and sign up/login
 2. Click "New site from Git"
 3. Connect your GitHub repository
-4. Configure build settings:
-   - Build command: `npm run build:production`
-   - Publish directory: `build`
-5. Set environment variables:
+4. **Important**: Netlify will automatically detect the `netlify.toml` configuration
+5. The `base = "iclr-react-web-app"` setting tells Netlify to:
+   - Use the `iclr-react-web-app` subdirectory
+   - Run `npm run build:production` from that directory
+   - Publish the `build` folder from that directory
+6. Set environment variables:
    - `REACT_APP_API_URL`: Your Render backend URL
    - `REACT_APP_ENVIRONMENT`: `production`
-6. Deploy!
+7. Deploy!
 
 #### Option B: Deploy via Netlify CLI
 ```bash
@@ -52,7 +54,12 @@ Your Node.js app is configured with:
 1. Go to [render.com](https://render.com) and sign up/login
 2. Click "New +" → "Web Service"
 3. Connect your GitHub repository
-4. Configure the service:
+4. **Important**: Render will automatically detect the `render.yaml` configuration
+5. The `rootDir: iclr-node-server-app` setting tells Render to:
+   - Use the `iclr-node-server-app` subdirectory
+   - Run `npm install` from that directory
+   - Run `npm start` from that directory
+6. Configure the service:
    - Name: `iclr-backend`
    - Environment: `Node`
    - Build Command: `npm install`

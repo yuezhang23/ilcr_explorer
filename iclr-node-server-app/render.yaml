@@ -3,6 +3,7 @@ services:
     name: iclr-backend
     env: node
     plan: free
+    rootDir: iclr-node-server-app
     buildCommand: npm install
     startCommand: npm start
     envVars:
