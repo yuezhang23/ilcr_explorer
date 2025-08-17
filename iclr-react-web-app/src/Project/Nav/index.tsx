@@ -19,8 +19,8 @@ function Nav() {
   const [openCollapse, setOpenCollapse] = useState<string | null>(null);
   const [selectedConference, setSelectedConference] = useState<string>('ICLR');
   
-  const availableConferences = ['ICLR', 'NeurIPS', 'ICML', 'ACL'];
-  const availableForms = ['Distribution', 'Dashboard', 'Table'];
+  const availableConferences = ['ICLR', 'NeurIPS'];
+  const availableForms = ['Table','Distribution', 'Dashboard' ];
 
   const handleSignout = () => {
     logout();
