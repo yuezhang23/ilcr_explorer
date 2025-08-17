@@ -462,12 +462,6 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                     label="Rebuttal"
                     className="mt-2"
                   />
-                  <button
-                    className="btn btn-sm border-0 px-0 justify-content-end"
-                    // onClick={addSummary}
-                  >
-                    Table
-                  </button>
                 {removeButton && (
                   <div className="d-flex justify-content-end">
                     {removeButton}

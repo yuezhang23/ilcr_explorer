@@ -157,7 +157,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
   // Loading state
   if (isLoading) {
     return (
-      <div className="card border-0 shadow-sm mt-4" style={{ borderRadius: '12px' }}>
+      <div className="card border-0 shadow-sm mt-4 mx-4" style={{ borderRadius: '12px' }}>
         <div className="card-header prediction-errors-header" style={{ 
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
@@ -278,13 +278,14 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                 <th scope="col" rowSpan={2} className="text-center align-middle" style={{ 
                   borderColor: '#e5e7eb',
                   color: '#374151',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  minWidth: '180px'
                 }}>Prompt Type</th>
                 <th scope="col" rowSpan={2} className="text-center align-middle" style={{ 
                   borderColor: '#e5e7eb',
                   color: '#374151',
                   fontWeight: '600'
-                }}>Data Type</th>
+                }}>Review Type</th>
                 <th scope="col" colSpan={4} className="text-center" style={{ 
                   borderColor: '#e5e7eb',
                   color: '#374151',
@@ -388,7 +389,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                       borderColor: '#e5e7eb',
                       color: promptMetrics.type === -1 ? '#374151' : 
                              promptMetrics.type === 1 ? '#d97706' : '#059669'
-                    }}>{promptMetrics.type === -1 ? "Initial" : promptMetrics.type === 1 ? "Rebuttal" : "Non-Rebuttal"}</td>
+                    }}>{promptMetrics.type === -1 ? "Initial" : promptMetrics.type === 1 ? "APO - Rebuttal" : "APO - Non-Rebuttal"}</td>
                     <td className="text-center fw-bold" style={{ 
                       borderColor: '#e5e7eb',
                       color: '#059669' // Green color for non-rebuttal
@@ -488,12 +489,12 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                         fontSize: '0.8rem',
                         lineHeight: '1.3'
                       }}>
-                        <div className="fw-bold mb-2">Prompt Content:</div>
+                        {/* <div className="fw-bold mb-2">Prompt Content:</div> */}
                         <div className="bg-light p-3 rounded" style={{ 
-                          backgroundColor: '#f1f5f9',
-                          border: '1px solid #e2e8f0',
-                          whiteSpace: 'pre-wrap',
-                          fontFamily: 'monospace'
+                          // // backgroundColor: '#f1f5f9',
+                          // border: '1px solid #e2e8f0',
+                          // whiteSpace: 'pre-wrap',
+                          // fontFamily: 'monospace'
                         }}>
                           {promptMetrics.prompt}
                         </div>

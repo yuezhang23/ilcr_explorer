@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import NavButton from './NavButton';
 
 interface PredictionMismatchTableProps {
-  predictionMismatches: ErrorDetail[];
-  setShowMismatch: (show: boolean) => void;
+  papers: any[];
+  currentPrompt: string;
+  predictionsMap: Map<any, any>;
+  rebuttalPredictionsMap: Map<any, any>;
+  nonRebuttalPredictionsMap: Map<any, any>;
 }
 
 interface ErrorDetail {
@@ -25,8 +27,11 @@ interface Filters {
 }
 
 const PredictionMismatchTable: React.FC<PredictionMismatchTableProps> = ({
-  predictionMismatches,
-  setShowMismatch,
+  papers,
+  currentPrompt,
+  predictionsMap,
+  rebuttalPredictionsMap,
+  nonRebuttalPredictionsMap,
 }) => {
   const [filters, setFilters] = useState<Filters>({
     nonRebuttalPrediction: '',
@@ -34,6 +39,41 @@ const PredictionMismatchTable: React.FC<PredictionMismatchTableProps> = ({
     decision: '',
     rating: ''
   });
+
+  // Compute prediction mismatches based on the passed parameters
+  const predictionMismatches = useMemo(() => {
+    if (!papers || papers.length === 0) return [];
+    
+    return papers
+      .filter(paper => {
+        // Only include papers that have both rebuttal and non-rebuttal predictions
+        const hasRebuttalPred = rebuttalPredictionsMap.has(paper.paper_id);
+        const hasNonRebuttalPred = nonRebuttalPredictionsMap.has(paper.paper_id);
+        return hasRebuttalPred && hasNonRebuttalPred;
+      })
+      .map(paper => {
+        const rebuttalPred = rebuttalPredictionsMap.get(paper.paper_id);
+        const nonRebuttalPred = nonRebuttalPredictionsMap.get(paper.paper_id);
+        
+
+        return {
+          paperId: paper.paper_id,
+          title: paper.title || 'No Title',
+          url: paper.url || 'No url',
+          nonRebuttalPrediction: nonRebuttalPred || 'Unknown',
+          rebuttalPrediction: rebuttalPred || 'Unknown',
+          decision: paper.decision === 'Reject' ? 'Reject' : 'Accept',
+          rating: paper.rating || 0,
+          confidence: paper.confidence || 0
+        };
+      })
+      .filter(mismatch => {
+        // Include papers where at least one prediction is wrong
+        const nonRebuttalCorrect = mismatch.nonRebuttalPrediction.toLowerCase() === mismatch.decision.toLowerCase();
+        const rebuttalCorrect = mismatch.rebuttalPrediction.toLowerCase() === mismatch.decision.toLowerCase();
+        return !nonRebuttalCorrect || !rebuttalCorrect;
+      });
+  }, [papers, rebuttalPredictionsMap, nonRebuttalPredictionsMap]);
 
   // Filter prediction mismatches based on current filters
   const filteredMismatches = useMemo(() => {
@@ -171,12 +211,6 @@ const PredictionMismatchTable: React.FC<PredictionMismatchTableProps> = ({
               <i className="fas fa-exclamation-triangle me-2" style={{ color: '#f39c12' }}></i>
               Prediction Mismatches ({filteredMismatches.length} of {predictionMismatches.length})
             </span>
-            <NavButton 
-              onClick={() => setShowMismatch(false)}
-              bgColor="rgba(108, 117, 125, 0.81)"
-            >
-              To Summary
-            </NavButton>
           </h6>
         </div>
         <div className="card-body p-0">

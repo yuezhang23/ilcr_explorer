@@ -793,7 +793,7 @@ function AdminHome() {
                         <div className="flex-grow-1 d-flex flex-column" style={{ overflow: 'hidden' }}>
                             <div className="card border-0 shadow-lg flex-grow-1 d-flex flex-column" style={{ ...adminStyles.table.card, overflow: 'hidden' }}> 
                                 <div className="card-header" style={adminStyles.table.header}>
-                                    <div className="mx-2 row align-items-center text-center" style={adminStyles.table.headerRow}>
+                                    <div className="row align-items-center text-center" style={adminStyles.table.headerRow}>
                                         <div className="col-3">Paper Title</div>
                                         <div className='col-2'>Authors</div>
                                         <div className="col-1">Rating</div>
@@ -813,7 +813,7 @@ function AdminHome() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="d-flex justify-content-end px-4 mt-2" style={{
+                                <div className="d-flex justify-content-end mt-2 me-5" style={{
                                     borderBottom: '1px solid #e9ecef',
                                     backgroundColor: '#ffffff',
                                     borderBottomLeftRadius: '8px',

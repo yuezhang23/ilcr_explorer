@@ -30,6 +30,12 @@ function Nav() {
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
+      
+      // Don't close if clicking on a collapse item (especially Analytics links)
+      if (target.closest('.collapse-item')) {
+        return;
+      }
+      
       if (openCollapse && !target.closest('.collapse-container')) {
         setOpenCollapse(null);
       }
@@ -57,27 +63,11 @@ function Nav() {
     setOpenCollapse(openCollapse === collapseId ? null : collapseId);
   };
 
-
-  const handleNavLinkMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const dataPath = e.currentTarget.getAttribute('data-path') || '';
-    const isActive = pathname.includes(dataPath);
-    if (!isActive) {
-      Object.assign(e.currentTarget.style, navStyles.navLinkHover);
-    }
-  };
-
-  const handleNavLinkMouseLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    const dataPath = e.currentTarget.getAttribute('data-path') || '';
-    const isActive = pathname.includes(dataPath);
-    Object.assign(e.currentTarget.style, isActive ? navStyles.navLinkActive : navStyles.navLink);
-  };
-
-  const handleSignOutMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    Object.assign(e.currentTarget.style, navStyles.signOutButtonHover);
-  };
-
-  const handleSignOutMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    Object.assign(e.currentTarget.style, navStyles.signOutButton);
+  const handleAnalyticsLinkClick = (form: string) => {
+    // Small delay to ensure the link click is registered
+    setTimeout(() => {
+      setOpenCollapse(null);
+    }, 100);
   };
 
   return (
@@ -113,18 +103,6 @@ function Nav() {
               className="btn dropdown-toggle" 
               onClick={() => toggleCollapse('conference-collapse')}
               style={navStyles.conferenceButton}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
             >
               {selectedConference}
             </button>
@@ -133,9 +111,6 @@ function Nav() {
               <div 
                 className="collapse-menu position-absolute"
                 style={navStyles.collapseMenu}
-                onMouseLeave={() => {
-                  setOpenCollapse(null);
-                }}
               >
                 {availableConferences.map((conference: string) => (
                   <button
@@ -143,16 +118,6 @@ function Nav() {
                     className="collapse-item"
                     onClick={() => handleConferenceSelect(conference)}
                     style={selectedConference === conference ? navStyles.collapseItemActive : navStyles.collapseItem}
-                    onMouseEnter={(e) => {
-                      if (selectedConference !== conference) {
-                        Object.assign(e.currentTarget.style, navStyles.collapseItemHover);
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedConference !== conference) {
-                        Object.assign(e.currentTarget.style, navStyles.collapseItem);
-                      }
-                    }}
                   >
                     {conference}
                   </button>
@@ -165,18 +130,6 @@ function Nav() {
               className="btn dropdown-toggle" 
               onClick={() => toggleCollapse('year-collapse')}
               style={navStyles.conferenceButton}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
             >
               {currentYear}
             </button>
@@ -185,9 +138,6 @@ function Nav() {
               <div 
                 className="collapse-menu position-absolute"
                 style={navStyles.collapseMenu}
-                onMouseLeave={() => {
-                  setOpenCollapse(null);
-                }}
               >
                 {availableYears.map((year: string) => (
                   <button
@@ -195,16 +145,6 @@ function Nav() {
                     className="collapse-item"
                     onClick={() => handleYearSelect(year)}
                     style={currentYear === year ? navStyles.collapseItemActive : navStyles.collapseItem}
-                    onMouseEnter={(e) => {
-                      if (currentYear !== year) {
-                        Object.assign(e.currentTarget.style, navStyles.collapseItemHover);
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (currentYear !== year) {
-                        Object.assign(e.currentTarget.style, navStyles.collapseItem);
-                      }
-                    }}
                   >
                     {year}
                   </button>
@@ -219,18 +159,6 @@ function Nav() {
               className="btn dropdown-toggle" 
               onClick={() => toggleCollapse('analytics-collapse')}
               style={navStyles.conferenceButton}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
             >
               Analytics
             </button>
@@ -239,28 +167,20 @@ function Nav() {
               <div 
                 className="collapse-menu position-absolute"
                 style={navStyles.collapseMenu}
-                onMouseLeave={() => {
-                  setOpenCollapse(null);
-                }}
               > 
               {availableForms.map((form: string) => (
                 <Link
                   key={form}
                   to={`/Analytics/${form}`}
                   className="collapse-item"
+                  data-path={`Analytics/${form}`}
                   style={{
                     ...navStyles.collapseItem,
                     display: 'block',
                     textDecoration: 'none',
                     outline: 'none'
                   }}
-                  onMouseEnter={(e) => {
-                    Object.assign(e.currentTarget.style, navStyles.collapseItemHover);
-                  }}
-                  onMouseLeave={(e) => {
-                    Object.assign(e.currentTarget.style, navStyles.collapseItem);
-                  }}
-                  onClick={() => setOpenCollapse(null)}
+                  onClick={() => handleAnalyticsLinkClick(form)}
                 >
                   {form}
                 </Link>
@@ -274,8 +194,6 @@ function Nav() {
           className="btn"
           data-path="Home"
           style={pathname.includes("Home") ? navStyles.navLinkActive : navStyles.navLink}
-          onMouseEnter={handleNavLinkMouseEnter}
-          onMouseLeave={handleNavLinkMouseLeave}
         >
           Home
         </Link>
@@ -287,8 +205,6 @@ function Nav() {
               className="btn"
               data-path="Profile"
               style={pathname.includes("Profile") ? navStyles.navLinkActive : navStyles.navLink}
-              onMouseEnter={handleNavLinkMouseEnter}
-              onMouseLeave={handleNavLinkMouseLeave}
             >
               Profile
             </Link>
@@ -296,8 +212,6 @@ function Nav() {
               onClick={handleSignout}
               className="btn"
               style={navStyles.signOutButton}
-              onMouseEnter={handleSignOutMouseEnter}
-              onMouseLeave={handleSignOutMouseLeave}
             >
               Sign Out
             </button>
@@ -309,8 +223,6 @@ function Nav() {
               className="btn"
               data-path="Signin"
               style={pathname.includes("Signin") ? navStyles.navLinkActive : navStyles.navLink}
-              onMouseEnter={handleNavLinkMouseEnter}
-              onMouseLeave={handleNavLinkMouseLeave}
             >
               Sign In
             </Link>
@@ -319,8 +231,6 @@ function Nav() {
               className="btn"
               data-path="Signup"
               style={pathname.includes("Signup") ? navStyles.navLinkActive : navStyles.navLink}
-              onMouseEnter={handleNavLinkMouseEnter}
-              onMouseLeave={handleNavLinkMouseLeave}
             >
               Sign Up
             </Link>

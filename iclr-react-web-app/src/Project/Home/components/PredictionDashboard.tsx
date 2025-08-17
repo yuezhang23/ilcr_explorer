@@ -152,14 +152,7 @@ const PredictionDashboard: React.FC<PredictionDashboardProps> = ({ className = '
                 title="Add new dashboard card"
               >
                 <FaPlus/>
-              </button>
-              <Link
-                to="/Table/"
-                className="btn"
-                data-path="Dashboard"
-              >
-                Table
-              </Link>   
+              </button>  
             </div>
             <div className="text-muted">
               {dashboardItems.length} card{dashboardItems.length !== 1 ? 's' : ''}

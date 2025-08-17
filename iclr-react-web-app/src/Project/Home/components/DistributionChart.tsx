@@ -7,8 +7,6 @@ import {
   Title,
   Tooltip,
   Legend,
-  LineElement,
-  PointElement,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 
@@ -18,9 +16,7 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend,
-  LineElement,
-  PointElement
+  Legend
 );
 
 interface RatingDistributionChartProps {
@@ -158,11 +154,6 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     const nonRebuttalAcceptData = [];
     const nonRebuttalRejectData = [];
     
-    // New arrays for trending curves (acceptance rates)
-    const nonRebuttalAcceptanceRateData = [];
-    const rebuttalAcceptanceRateData = [];
-    const actualAcceptanceRateData = [];
-    
     for (let i = 0; i < bins.length; i++) {
       acceptPredData.push(bins[i].acceptCount);
       rejectPredData.push(bins[i].rejectCount);
@@ -172,15 +163,6 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       rebuttalRejectData.push(bins[i].rebuttalRejectCount);
       nonRebuttalAcceptData.push(bins[i].nonRebuttalAcceptCount);
       nonRebuttalRejectData.push(bins[i].nonRebuttalRejectCount);
-      
-      // Calculate acceptance rates for trending curves
-      const totalNonRebuttal = bins[i].nonRebuttalAcceptCount + bins[i].nonRebuttalRejectCount;
-      const totalRebuttal = bins[i].rebuttalAcceptCount + bins[i].rebuttalRejectCount;
-      const totalActual = bins[i].trueAcceptCount + bins[i].trueRejectCount;
-      
-      nonRebuttalAcceptanceRateData.push(totalNonRebuttal > 0 ? (bins[i].nonRebuttalAcceptCount / totalNonRebuttal) * 100 : 0);
-      rebuttalAcceptanceRateData.push(totalRebuttal > 0 ? (bins[i].rebuttalAcceptCount / totalRebuttal) * 100 : 0);
-      actualAcceptanceRateData.push(totalActual > 0 ? (bins[i].trueAcceptCount / totalActual) * 100 : 0);
     }
 
     // Create datasets array - always show all cases
@@ -190,7 +172,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     if (rebuttalPredictionsMap && nonRebuttalPredictionsMap) {
       datasets.push(
         {
-          label: `Non-Rebuttal Accept`,
+          label: `Predicted Accept of Non-Rebuttal Reviews`,
           data: nonRebuttalAcceptData,
           backgroundColor: 'rgba(34, 139, 34, 0.3)',
           borderColor: 'rgba(34, 139, 34, 0.6)',
@@ -200,7 +182,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           categoryPercentage: 0.6,
         },
         {
-          label: `Non-Rebuttal Reject`,
+          label: `Predicted Reject of Non-Rebuttal Reviews`,
           data: nonRebuttalRejectData,
           backgroundColor: 'rgba(223, 138, 138, 0.49)',
           borderColor: 'rgba(218, 122, 122, 0.81)',
@@ -210,7 +192,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           categoryPercentage: 0.6,
         },
         {
-          label: `Rebuttal Accept`,
+          label: `Predicted Accept of Rebuttal Reviews`,
           data: rebuttalAcceptData,
           backgroundColor: 'rgba(46, 204, 113, 0.5)',
           borderColor: 'rgba(46, 204, 113, 0.8)',
@@ -220,7 +202,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           categoryPercentage: 0.6,
         },
         {
-          label: `Rebuttal Reject`,
+          label: `Predicted Reject of Rebuttal Reviews`,
           data: rebuttalRejectData,
           backgroundColor: 'rgba(231, 76, 60, 0.5)',
           borderColor: 'rgba(231, 76, 60, 0.8)',
@@ -234,7 +216,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       // Fallback to current predictions if rebuttal data not available
       datasets.push(
         {
-          label: `Non-Rebuttal Accept`,
+          label: `Predicted Accept of Non-Rebuttal Reviews`,
           data: nonRebuttalAcceptData,
           backgroundColor: 'rgba(46, 204, 113, 0.7)',
           borderColor: 'rgba(46, 204, 113, 0.9)',
@@ -244,7 +226,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           categoryPercentage: 0.6,
         },
         {
-          label: `Non-Rebuttal Reject`,
+          label: `Predicted Reject of Non-Rebuttal Reviews`,
           data: nonRebuttalRejectData,
           backgroundColor: 'rgba(231, 76, 60, 0.7)',
           borderColor: 'rgba(231, 76, 60, 0.9)',
@@ -259,7 +241,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     // Always add actual decisions
     datasets.push(
       {
-        label: `Accept Decisions (${totalTrueAccepts})`,
+        label: `Actual Accept`,
         data: acceptActualData,
         backgroundColor: 'rgba(52, 152, 219, 0.8)',
         borderColor: 'rgba(52, 152, 219, 1)',
@@ -269,7 +251,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
         categoryPercentage: 0.6,
       },
       {
-        label: `Reject Decisions (${totalTrueRejects})`,
+        label: `Actual Reject`,
         data: rejectActualData,
         backgroundColor: 'rgba(155, 89, 182, 0.8)',
         borderColor: 'rgba(155, 89, 182, 1)', 
@@ -280,64 +262,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       } 
     );
 
-    // Add trending curves for acceptance rates (only for rating field)
-    if (field === 'rating') {
-      datasets.push(
-        {
-          label: 'Non-Rebuttal Acceptance Rate (%)',
-          data: nonRebuttalAcceptanceRateData,
-          type: 'line',
-          yAxisID: 'y1',
-          borderColor: 'rgba(34, 139, 34, 0.6)',
-          backgroundColor: 'rgba(34, 139, 34, 0.1)',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          pointBackgroundColor: 'rgba(34, 139, 34, 0.6)',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 1,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          fill: false,
-          tension: 0.4,
-          hidden: false,
-        },
-        {
-          label: 'Rebuttal Acceptance Rate (%)',
-          data: rebuttalAcceptanceRateData,
-          type: 'line',
-          yAxisID: 'y1',
-          borderColor: 'rgba(46, 204, 113, 0.8)',
-          backgroundColor: 'rgba(46, 204, 113, 0.1)',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          pointBackgroundColor: 'rgba(46, 204, 113, 0.8)',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 1,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          fill: false,
-          tension: 0.4,
-          hidden: false,
-        },
-        {
-          label: 'Actual Acceptance Rate (%)',
-          data: actualAcceptanceRateData,
-          type: 'line',
-          yAxisID: 'y1',
-          borderColor: 'rgba(52, 152, 219, 1)',
-          backgroundColor: 'rgba(52, 152, 219, 0.1)',
-          borderWidth: 2,
-          pointBackgroundColor: 'rgba(52, 152, 219, 1)',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 1,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          fill: false,
-          tension: 0.4,
-          hidden: false,
-        }
-      );
-    }
+
 
     return {
       labels,
@@ -366,15 +291,11 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
         labels: {
           usePointStyle: true,
           padding: 20,
-          filter: function(legendItem: any, chartData: any) {
-            // Hide trending line labels from legend
-            return !legendItem.text.includes('Acceptance Rate (%)');
-          },
         },
       },
       title: {
         display: true,
-        text: `${field.charAt(0).toUpperCase() + field.slice(1)} Distribution with Acceptance Rate Trends`,
+        text: `${field.charAt(0).toUpperCase() + field.slice(1)} Distribution`,
         font: {
           size: 14,
           weight: 'bold' as const,
@@ -389,17 +310,6 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
             return `${field.charAt(0).toUpperCase() + field.slice(1)} Range: ${chartData.labels[dataIndex]}`;
           },
           label: function(context: any) {
-            const datasetIndex = context.datasetIndex;
-            const dataIndex = context.dataIndex;
-            
-            // Check if this is a trending curve (line chart)
-            if (context.dataset.type === 'line') {
-              const acceptanceRate = context.parsed.y;
-              const caseName = context.dataset.label.replace(' Acceptance Rate (%)', '');
-              return `${caseName}: ${acceptanceRate.toFixed(1)}%`;
-            }
-            
-            // For bar charts, use default label
             return context.dataset.label + ': ' + context.parsed.y;
           },
           afterBody: function(context: any) {
@@ -492,28 +402,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           color: 'rgba(0, 0, 0, 0.1)',
         },
       },
-      y1: {
-        type: 'linear' as const,
-        display: field === 'rating',
-        position: 'right' as const,
-        title: {
-          display: field === 'rating',
-          text: 'Acceptance Rate (%)',
-          font: {
-            weight: 'bold' as const,
-          },
-        },
-        grid: {
-          drawOnChartArea: false,
-        },
-        min: 0,
-        max: 100,
-        ticks: {
-          callback: function(value: any) {
-            return value + '%';
-          }
-        }
-      },
+
     },
     interaction: {
       mode: 'nearest' as const,

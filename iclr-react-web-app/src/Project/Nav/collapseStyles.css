@@ -9,11 +9,15 @@
   max-width: 120px !important;
   margin: 0 !important;
   font-family: inherit !important;
+  position: relative !important;
+  z-index: 1002 !important;
 }
 
 .collapse-item:hover {
   text-decoration: none !important;
   outline: none !important;
+  background-color: rgba(100, 100, 180, 0.05) !important;
+  color: #6464b4 !important;
 }
 
 .collapse-item:focus {
@@ -25,10 +29,51 @@
 .collapse-menu {
   box-sizing: border-box !important;
   overflow: hidden !important;
+  z-index: 1001 !important;
 }
 
 /* Prevent any default link styling conflicts */
 .collapse-menu a.collapse-item {
   color: inherit !important;
   background: inherit !important;
+  cursor: pointer !important;
+}
+
+/* Ensure Analytics links are clickable */
+.collapse-menu a.collapse-item[data-path*="Analytics"] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Hover effects for navigation buttons */
+.btn[data-path] {
+  transition: all 0.3s ease !important;
+}
+
+.btn[data-path]:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+  border-radius: 16px !important;
+  width: 90px !important;
+}
+
+/* Hover effects for conference and year buttons */
+.btn.dropdown-toggle {
+  transition: all 0.22s cubic-bezier(.4,0,.2,1) !important;
+}
+
+.btn.dropdown-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Hover effects for sign out button */
+.btn[onclick*="handleSignout"]:hover {
+  background-color: rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2) !important;
 } 

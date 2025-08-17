@@ -1,76 +1,38 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import * as home from '../home';
-import { adminStyles, getTooltipArrowStyle } from '../styles/adminStyles';
+import { adminStyles } from '../styles/adminStyles';
 
 interface PromptCheckboxProps {
-    selectedPrompts: string[];
-    onPromptChange: (prompts: string[]) => void;
+    selectedPrompt: string | null;
+    onPromptChange: (prompt: string | null) => void;
     isLoading?: boolean;
-    showTooltip?: boolean;
-    tooltipPosition?: 'left' | 'right';
     className?: string;
     disabled?: boolean;
-    maxSelections?: number;
 }
 
 const PromptCheckbox: React.FC<PromptCheckboxProps> = ({
-    selectedPrompts,
+    selectedPrompt,
     onPromptChange,
     isLoading = false,
-    showTooltip = true,
-    tooltipPosition = 'left',
     className = '',
-    disabled = false,
-    maxSelections = 3
+    disabled = false
 }) => {
-    const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
-    const [tooltipCoords, setTooltipCoords] = useState<{x: number, y: number}>({x: 0, y: 0});
-    const [tooltipContent, setTooltipContent] = useState<string>("");
-
     // Handle checkbox change
     const handleCheckboxChange = useCallback((prompt: string, checked: boolean) => {
         if (disabled || isLoading) return;
 
-        let newSelectedPrompts: string[];
-        
         if (checked) {
-            // Add prompt if under max limit
-            if (selectedPrompts.length < maxSelections) {
-                newSelectedPrompts = [...selectedPrompts, prompt];
-            } else {
-                // Replace the last selected prompt
-                newSelectedPrompts = [...selectedPrompts.slice(0, -1), prompt];
-            }
+            onPromptChange(prompt);
         } else {
-            // Remove prompt
-            newSelectedPrompts = selectedPrompts.filter(p => p !== prompt);
+            onPromptChange(null);
         }
-        
-        onPromptChange(newSelectedPrompts);
-    }, [selectedPrompts, onPromptChange, disabled, isLoading, maxSelections]);
-
-    // Handle tooltip
-    const handleMouseEnter = useCallback((event: React.MouseEvent, prompt: string) => {
-        if (!showTooltip || disabled || isLoading) return;
-        
-        const rect = event.currentTarget.getBoundingClientRect();
-        setTooltipCoords({
-            x: tooltipPosition === 'left' ? rect.left - 10 : rect.right + 10,
-            y: rect.top + rect.height / 2
-        });
-        setTooltipContent(prompt);
-        setTooltipVisible(true);
-    }, [showTooltip, tooltipPosition, disabled, isLoading]);
-
-    const handleMouseLeave = useCallback(() => {
-        setTooltipVisible(false);
-    }, []);
+    }, [onPromptChange, disabled, isLoading]);
 
     // Memoize checkbox items to avoid unnecessary re-renders
     const checkboxItems = useMemo(() => {
         return home.PROMPT_CANDIDATES.map((prompt, index) => {
-            const isSelected = selectedPrompts.includes(prompt);
-            const isDisabled = disabled || isLoading || (!isSelected && selectedPrompts.length >= maxSelections);
+            const isSelected = selectedPrompt === prompt;
+            const isDisabled = disabled || isLoading;
             
             return (
                 <div
@@ -85,12 +47,11 @@ const PromptCheckbox: React.FC<PromptCheckboxProps> = ({
                         transition: 'all 0.2s ease',
                         cursor: isDisabled ? 'not-allowed' : 'pointer'
                     }}
-                    onMouseEnter={(e) => handleMouseEnter(e, prompt)}
-                    onMouseLeave={handleMouseLeave}
                 >
                     <input
                         className="form-check-input"
-                        type="checkbox"
+                        type="radio"
+                        name="prompt-selection"
                         id={`prompt-${index}`}
                         checked={isSelected}
                         onChange={(e) => handleCheckboxChange(prompt, e.target.checked)}
@@ -109,12 +70,12 @@ const PromptCheckbox: React.FC<PromptCheckboxProps> = ({
                             lineHeight: '1.4'
                         }}
                     >
-                        {index + 1}
+                        {index + 1} - {home.PROMPT_TYPES.find(p => p.prompt === prompt)?.type === 1 ? 'APO - Rebuttal' : home.PROMPT_TYPES.find(p => p.prompt === prompt)?.type === 0 ? 'APO - Non-Rebuttal' : 'Initial'}
                     </label>
                 </div>
             );
         });
-    }, [selectedPrompts, disabled, isLoading, maxSelections, handleCheckboxChange, handleMouseEnter, handleMouseLeave]);
+    }, [selectedPrompt, disabled, isLoading, handleCheckboxChange]);
 
     return (
         <div className={`position-relative ${className}`}>
@@ -140,34 +101,6 @@ const PromptCheckbox: React.FC<PromptCheckboxProps> = ({
                     {checkboxItems}
                 </div>
             </div>
-
-            {/* Tooltip */}
-            {showTooltip && tooltipVisible && (
-                <div 
-                    style={{
-                        ...adminStyles.tooltip.dropdown,
-                        left: tooltipCoords.x,
-                        top: tooltipCoords.y,
-                        transform: tooltipPosition === 'left' 
-                            ? 'translateX(-100%) translateY(-50%)' 
-                            : 'translateY(-50%)',
-                        zIndex: 1000
-                    }}
-                >
-                    <div style={adminStyles.tooltip.title}>
-                        Prompt Preview:
-                    </div>
-                    <div style={adminStyles.tooltip.content}>
-                        {tooltipContent}
-                    </div>
-                    <div 
-                        style={{
-                            ...adminStyles.tooltip.arrow,
-                            ...getTooltipArrowStyle(tooltipPosition)
-                        }}
-                    />
-                </div>
-            )}
         </div>
     );
 };

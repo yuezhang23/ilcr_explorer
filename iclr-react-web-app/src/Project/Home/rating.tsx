@@ -17,11 +17,32 @@ import ConferenceCheckbox from './components/ConferenceCheckbox';
 import YearCheckbox from './components/YearCheckbox';
 import ConfirmationModal from './components/ConfirmationModal';
 import * as util from './utility';
+import PredictionMismatchTable from './components/PredictionMismatchTable';
 
 axios.defaults.withCredentials = true;
 
+// Interface for processed paper data
+interface ProcessedPaper {
+  paper_id: string;
+  title?: string;
+  url?: string;
+  decision?: string;
+  rating: number;
+  confidence: number;
+  soundness: number;
+  presentation: number;
+  contribution: number;
+  ratings: number[];
+  confidences: number[];
+  soundnesses: number[];
+  presentations: number[];
+  contributions: number[];
+  decisions: string[];
+  [key: string]: any; // Allow additional properties from the original data
+}
+
 // Helper function to process papers data
-function processPapersData(data: any[]) {
+function processPapersData(data: any[]): ProcessedPaper[] {
     // console.log(data[0]);
     return data.map((m: any) => {
         const {metareviews, ...bib} = m;
@@ -103,16 +124,16 @@ function RatingHome() {
     // Only destructure currentYear to avoid unnecessary re-renders
     const { currentYear } = useYear();
     
-    const [allPapers, setAllPapers] = useState<any[]>([]); // For plot data
+    const [allPapers, setAllPapers] = useState<any[]>([]); // For plot data - keeping as any[] since it comes from API
     
     // Loading states
     const [isLoadingAllData, setIsLoadingAllData] = useState<boolean>(false);
     const [isLoadingPredictions, setIsLoadingPredictions] = useState<boolean>(false);
     
-    // Updated to handle multiple prompts
-    const [selectedPrompts, setSelectedPrompts] = useState<string[]>([home.BASIC_PROMPT]);
+    // Updated to handle single prompt selection
+    const [selectedPrompt, setSelectedPrompt] = useState<string>(home.BASIC_PROMPT);
     const [selectedConferences, setSelectedConferences] = useState<string[]>(['ICLR']);
-    const [selectedYears, setSelectedYears] = useState<string[]>(['2024']);
+    const [selectedYear, setSelectedYear] = useState<string>('2024');
     const [pub_rebuttal, setPubRebuttal] = useState<boolean>(false);
     const [field, setField] = useState<string>("rating");
     const [promt_n, setPromt_n] = useState<string>(home.BASIC_PROMPT);
@@ -124,7 +145,7 @@ function RatingHome() {
     const [showMismatch, setShowMismatch] = useState<boolean>(false);
     
     // Memoize expensive computations
-    const processedAllPapers = useMemo(() => processPapersData(allPapers), [allPapers]);
+    const processedAllPapers: ProcessedPaper[] = useMemo(() => processPapersData(allPapers), [allPapers]);
     
     // Memoize prediction lookup to avoid repeated filtering
     const predictionsMap = useMemo(() => {
@@ -159,76 +180,43 @@ function RatingHome() {
         return map;
     }, [nonRebuttalPreds]);
 
-    // Memoize current prompt (use the first selected prompt for now)
+    // Memoize current prompt (use the selected prompt)
     const currentPrompt = useMemo(() => {
-        return selectedPrompts.length > 0 ? selectedPrompts[0] : home.BASIC_PROMPT;
-    }, [selectedPrompts]);
+        return selectedPrompt || home.BASIC_PROMPT;
+    }, [selectedPrompt]);
 
     // Optimized data fetching with caching and error handling
     const fetchAllData = useCallback(async () => {
         setIsLoadingAllData(true);
         try {
-            // Fetch data for each selected year and combine results
-            const allResults = [];
-            let combinedName = '';
+            // Fetch data for the selected year
+            await axios.post('/api/iclr/year', { year: selectedYear });
             
-            for (const year of selectedYears) {
-                // Temporarily set the global year to fetch data for this specific year
-                await axios.post('/api/iclr/year', { year });
-                
-                // Fetch data for this year
-                const result = await home.findAllIclrSubmissionsWithPartialMetareviews();
-                allResults.push(...result.data);
-                
-                // Use the name from the first result or combine names
-                if (!combinedName) {
-                    combinedName = result.name;
-                } else {
-                    combinedName = `${combinedName}, ${result.name}`;
-                }
-            }
+            // Fetch data for this year
+            const result = await home.findAllIclrSubmissionsWithPartialMetareviews();
             
-            // Reset to the original global year (use the first selected year as default)
-            if (selectedYears.length > 0) {
-                await axios.post('/api/iclr/year', { year: selectedYears[0] });
-            }
-            
-            setAllPapers(allResults);
-            console.log(`Fetched ${allResults.length} papers from years: ${selectedYears.join(', ')}`);
-            dispatch(setIclrName(combinedName));
+            setAllPapers(result.data);
+            console.log(`Fetched ${result.data.length} papers from year: ${selectedYear}`);
+            dispatch(setIclrName(result.name));
         } catch (error: any) {
             console.error('Error fetching all data:', error.response?.data || error);
         } finally {
             setIsLoadingAllData(false);
         }
-    }, [selectedYears, dispatch]);
+    }, [selectedYear, dispatch]);
 
     // Use custom hook for year-dependent prediction fetching
     const fetchPredictionsForAllPapers = useCallback(async (prompt: string, rebuttal: boolean) => {
         setIsLoadingPredictions(true);
         try {
-            // Fetch predictions for each selected year and combine results
-            const allRebuttalPredictions = [];
-            const allNonRebuttalPredictions = [];
+            // Fetch predictions for the selected year
+            await axios.post('/api/iclr/year', { year: selectedYear });
             
-            for (const year of selectedYears) {
-                // Temporarily set the global year to fetch predictions for this specific year
-                await axios.post('/api/iclr/year', { year });
-                
-                // Fetch predictions for this year
-                const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([
-                    home.getPredsByPromptAndRebuttal(prompt, 1), // With rebuttal
-                    home.getPredsByPromptAndRebuttal(prompt, 0)  // Without rebuttal
-                ]);
-                
-                allRebuttalPredictions.push(...rebuttalPredictions);
-                allNonRebuttalPredictions.push(...nonRebuttalPredictions);
-            }
-            
-            // Reset to the original global year (use the first selected year as default)
-            if (selectedYears.length > 0) {
-                await axios.post('/api/iclr/year', { year: selectedYears[0] });
-            }
+            // Fetch predictions for this year
+            const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([
+                home.getPredsByPromptAndRebuttal(prompt, 1), // With rebuttal
+                home.getPredsByPromptAndRebuttal(prompt, 0)  // Without rebuttal
+            ]);
             
             const processPredictions = (predictions: any[]) => predictions.map((p: any) => ({
                 ...p,
@@ -236,8 +224,8 @@ function RatingHome() {
                     : p.prediction.toLowerCase() === 'no' || p.prediction.toLowerCase() === 'reject' ? "Reject" : "O"
             }));
             
-            const processedRebuttalPreds = processPredictions(allRebuttalPredictions);
-            const processedNonRebuttalPreds = processPredictions(allNonRebuttalPredictions);
+            const processedRebuttalPreds = processPredictions(rebuttalPredictions);
+            const processedNonRebuttalPreds = processPredictions(nonRebuttalPredictions);
             
             // Store both sets of predictions
             dispatch(setRebuttalPreds(processedRebuttalPreds));
@@ -249,13 +237,13 @@ function RatingHome() {
             
             const acceptCount = currentPredictions.filter(p => p.prediction === 'Accept').length;
             const rejectCount = currentPredictions.filter(p => p.prediction === 'Reject').length;
-            console.log(`Processed predictions for years ${selectedYears.join(', ')} - Accept: ${acceptCount}, Reject: ${rejectCount}`);
+            console.log(`Processed predictions for year ${selectedYear} - Accept: ${acceptCount}, Reject: ${rejectCount}`);
         } catch (error) {
             console.error('Error fetching predictions:', error);
         } finally {
             setIsLoadingPredictions(false);
         }
-    }, [selectedYears, dispatch]);
+    }, [selectedYear, dispatch]);
 
     // Main data fetching effect - fetch all data for plot
     useEffect(() => {
@@ -278,10 +266,10 @@ function RatingHome() {
     }, [pub_rebuttal, rebuttalPreds, nonRebuttalPreds, dispatch]);
 
     // Handle prompt selection change
-    const handlePromptChange = useCallback((prompts: string[]) => {
-        setSelectedPrompts(prompts);
-        if (prompts.length > 0) {
-            setPromt_n(prompts[0]); // Use the first selected prompt for the textarea
+    const handlePromptChange = useCallback((prompt: string) => {
+        setSelectedPrompt(prompt);
+        if (prompt) {
+            setPromt_n(prompt); // Use the selected prompt for the textarea
         }
     }, []);
 
@@ -291,8 +279,8 @@ function RatingHome() {
     }, []);
 
     // Handle year selection change
-    const handleYearChange = useCallback((years: string[]) => {
-        setSelectedYears(years);
+    const handleYearChange = useCallback((year: string) => {
+        setSelectedYear(year);
     }, []);
     
     return (
@@ -315,47 +303,28 @@ function RatingHome() {
                             <div className="d-flex gap-3" style={ratingStyles.formControlContainer}>
                                 <div className="flex-fill">
                                     <PromptCheckbox
-                                        selectedPrompts={selectedPrompts}
+                                        selectedPrompt={selectedPrompt}
                                         onPromptChange={handlePromptChange}
                                         isLoading={isLoadingPredictions}
-                                        showTooltip={true}
-                                        tooltipPosition="right"
-                                        maxSelections={3}
-                                    />
-                                </div>
-                                <div className="flex-fill">
-                                    <ConferenceCheckbox
-                                        selectedConferences={selectedConferences}
-                                        onConferenceChange={handleConferenceChange}
-                                        isLoading={isLoadingPredictions}
-                                        showTooltip={true}
-                                        tooltipPosition="right"
-                                        maxSelections={4}
                                     />
                                 </div>
                                 <div className="flex-fill">
                                     <YearCheckbox
-                                        selectedYears={selectedYears}
+                                        selectedYear={selectedYear}
                                         onYearChange={handleYearChange}
                                         isLoading={isLoadingPredictions}
-                                        showTooltip={true}
-                                        tooltipPosition="right"
-                                        maxSelections={4}
                                     />
                                 </div>
                             </div>
                             <div className="mt-3">
                                 <textarea
                                     className="form-control prompt-textarea"
-                                    value={promt_n || currentPrompt}
+                                    value={currentPrompt}
                                     onChange={(e) => setPromt_n(e.target.value)}
                                     placeholder={currentPrompt}
                                     style={ratingStyles.promptTextarea}
                                     rows={20}
                                 />
-                                {/* <div className="mt-1 text-muted" style={ratingStyles.promptInfo}>
-                                    <small>Edit the prompt above to customize predictions</small>
-                                </div> */}
                             </div>
                             <div className="d-flex align-items-center mt-3" style={adminStyles.prediction.container}>
                                 <button 
@@ -372,7 +341,7 @@ function RatingHome() {
                                 >
                                     Prompt
                                 </button>
-                                <div className="ms-2 d-flex align-items-center gap-1">
+                                {/* <div className="ms-2 d-flex align-items-center gap-1">
                                     <label 
                                         htmlFor="size-input" 
                                         className="form-label ms-3"
@@ -396,7 +365,7 @@ function RatingHome() {
                                         }}
                                         placeholder="200"
                                     />
-                                </div>
+                                </div> */}
                             </div>
                         {/* </div> */}
                     </div>
@@ -465,9 +434,12 @@ function RatingHome() {
                                     </div>
                                 </div>
                             ) : showPredictionErrors ? (
-                                <PredictionErrors 
-                                    showMismatch={showMismatch}
-                                    setShowMismatch={setShowMismatch}
+                                <PredictionMismatchTable
+                                    papers={processedAllPapers}
+                                    currentPrompt={currentPrompt}
+                                    predictionsMap={predictionsMap}
+                                    rebuttalPredictionsMap={rebuttalPredictionsMap}
+                                    nonRebuttalPredictionsMap={nonRebuttalPredictionsMap}
                                 />
                             ) : (
                                 <RatingDistributionChart 

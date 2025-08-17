@@ -1,78 +1,35 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useYear } from '../../../contexts/YearContext';
-import { adminStyles, getTooltipArrowStyle } from '../styles/adminStyles';
+import { adminStyles } from '../styles/adminStyles';
 
 interface YearCheckboxProps {
-    selectedYears: string[];
-    onYearChange: (years: string[]) => void;
+    selectedYear: string;
+    onYearChange: (year: string) => void;
     isLoading?: boolean;
-    showTooltip?: boolean;
-    tooltipPosition?: 'left' | 'right';
     className?: string;
     disabled?: boolean;
-    maxSelections?: number;
 }
 
 const YearCheckbox: React.FC<YearCheckboxProps> = ({
-    selectedYears,
+    selectedYear,
     onYearChange,
     isLoading = false,
-    showTooltip = true,
-    tooltipPosition = 'left',
     className = '',
-    disabled = false,
-    maxSelections = 4
+    disabled = false
 }) => {
-    const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
-    const [tooltipCoords, setTooltipCoords] = useState<{x: number, y: number}>({x: 0, y: 0});
-    const [tooltipContent, setTooltipContent] = useState<string>("");
-
     const { availableYears } = useYear();
 
-    // Handle checkbox change
-    const handleCheckboxChange = useCallback((year: string, checked: boolean) => {
+    // Handle radio button change
+    const handleRadioChange = useCallback((year: string) => {
         if (disabled || isLoading) return;
+        onYearChange(year);
+    }, [onYearChange, disabled, isLoading]);
 
-        let newSelectedYears: string[];
-        
-        if (checked) {
-            // Add year if under max limit
-            if (selectedYears.length < maxSelections) {
-                newSelectedYears = [...selectedYears, year];
-            } else {
-                // Replace the last selected year
-                newSelectedYears = [...selectedYears.slice(0, -1), year];
-            }
-        } else {
-            // Remove year
-            newSelectedYears = selectedYears.filter(y => y !== year);
-        }
-        
-        onYearChange(newSelectedYears);
-    }, [selectedYears, onYearChange, disabled, isLoading, maxSelections]);
-
-    // Handle tooltip
-    const handleMouseEnter = useCallback((event: React.MouseEvent, year: string) => {
-        if (!showTooltip || disabled || isLoading) return;
-        
-        const rect = event.currentTarget.getBoundingClientRect();
-        setTooltipCoords({
-            x: tooltipPosition === 'left' ? rect.left - 10 : rect.right + 10,
-            y: rect.top + rect.height / 2
-        });
-        setTooltipContent(year);
-        setTooltipVisible(true);
-    }, [showTooltip, tooltipPosition, disabled, isLoading]);
-
-    const handleMouseLeave = useCallback(() => {
-        setTooltipVisible(false);
-    }, []);
-
-    // Memoize checkbox items to avoid unnecessary re-renders
-    const checkboxItems = useMemo(() => {
+    // Memoize radio button items to avoid unnecessary re-renders
+    const radioItems = useMemo(() => {
         return availableYears.map((year, index) => {
-            const isSelected = selectedYears.includes(year);
-            const isDisabled = disabled || isLoading || (!isSelected && selectedYears.length >= maxSelections);
+            const isSelected = selectedYear === year;
+            const isDisabled = disabled || isLoading;
             
             return (
                 <div
@@ -87,15 +44,14 @@ const YearCheckbox: React.FC<YearCheckboxProps> = ({
                         transition: 'all 0.2s ease',
                         cursor: isDisabled ? 'not-allowed' : 'pointer'
                     }}
-                    onMouseEnter={(e) => handleMouseEnter(e, year)}
-                    onMouseLeave={handleMouseLeave}
                 >
                     <input
                         className="form-check-input"
-                        type="checkbox"
+                        type="radio"
+                        name="yearSelection"
                         id={`year-${index}`}
                         checked={isSelected}
-                        onChange={(e) => handleCheckboxChange(year, e.target.checked)}
+                        onChange={() => handleRadioChange(year)}
                         disabled={isDisabled}
                         style={{
                             marginRight: '8px',
@@ -116,7 +72,7 @@ const YearCheckbox: React.FC<YearCheckboxProps> = ({
                 </div>
             );
         });
-    }, [selectedYears, disabled, isLoading, maxSelections, handleCheckboxChange, handleMouseEnter, handleMouseLeave, availableYears]);
+    }, [selectedYear, disabled, isLoading, handleRadioChange, availableYears]);
 
     return (
         <div className={`position-relative ${className}`}>
@@ -127,7 +83,7 @@ const YearCheckbox: React.FC<YearCheckboxProps> = ({
                     padding: '8px 16px'
                 }}>
                     <div className="d-flex justify-content-between align-items-center">
-                        <span> Years </span>
+                        <span> Year </span>
                         {isLoading && (
                             <div className="spinner-border spinner-border-sm" role="status">
                                 <span className="visually-hidden">Loading...</span>
@@ -139,37 +95,9 @@ const YearCheckbox: React.FC<YearCheckboxProps> = ({
                     maxHeight: '200px',
                     overflowY: 'auto'
                 }}>
-                    {checkboxItems}
+                    {radioItems}
                 </div>
             </div>
-
-            {/* Tooltip */}
-            {showTooltip && tooltipVisible && (
-                <div 
-                    style={{
-                        ...adminStyles.tooltip.dropdown,
-                        left: tooltipCoords.x,
-                        top: tooltipCoords.y,
-                        transform: tooltipPosition === 'left' 
-                            ? 'translateX(-100%) translateY(-50%)' 
-                            : 'translateY(-50%)',
-                        zIndex: 1000
-                    }}
-                >
-                    <div style={adminStyles.tooltip.title}>
-                        Year:
-                    </div>
-                    <div style={adminStyles.tooltip.content}>
-                        {tooltipContent}
-                    </div>
-                    <div 
-                        style={{
-                            ...adminStyles.tooltip.arrow,
-                            ...getTooltipArrowStyle(tooltipPosition)
-                        }}
-                    />
-                </div>
-            )}
         </div>
     );
 };
