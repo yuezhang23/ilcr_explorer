@@ -6,17 +6,10 @@ import UserRoutes from "./04Users/routes.js";
 import Iclr from "./02ICLR/routes.js";
 import Public from "./03PublicComments/routes.js";
 import Prompt from "./05Prompt/routes.js";
-import Test from "./Test.js";
+import predictionStats from "./06PredictionStas/routes.js";
 
 const app = express();
 const CONNECTION_STRING = process.env.DB_CONNECTION_STRING;
-
-// Environment variable validation
-console.log('=== Environment Configuration ===');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('PORT:', process.env.PORT);
-console.log('FRONTEND_URL:', process.env.FRONTEND_URL);
-console.log('DB_CONNECTION_STRING:', process.env.DB_CONNECTION_STRING ? '***SET***' : '***NOT SET***');
 
 // Validate required environment variables
 if (!CONNECTION_STRING) {
@@ -227,6 +220,7 @@ Iclr(app);
 UserRoutes(app);
 Public(app);
 Prompt(app);
+predictionStats(app);
 
 // Test(app);
 app.listen(process.env.PORT || 4000);
