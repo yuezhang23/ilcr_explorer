@@ -2,7 +2,7 @@ import axios from "axios";
 axios.defaults.withCredentials = true;
 
 
-export const BASE_API = process.env.REACT_APP_API_BASE;
+export const BASE_API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
 export const ICLR_API = `${BASE_API}/api/iclr`;
 export const ADMIN_API = `${BASE_API}/api/admin`;
 export const PROMPT_API = `${BASE_API}/api/prompt`;

@@ -190,7 +190,7 @@ function RatingHome() {
         setIsLoadingAllData(true);
         try {
             // Fetch data for the selected year
-            await axios.post('/api/iclr/year', { year: selectedYear });
+            await axios.post(`${home.BASE_API}/api/iclr/year`, { year: selectedYear });
             
             // Fetch data for this year
             const result = await home.findAllIclrSubmissionsWithPartialMetareviews();
@@ -210,7 +210,7 @@ function RatingHome() {
         setIsLoadingPredictions(true);
         try {
             // Fetch predictions for the selected year
-            await axios.post('/api/iclr/year', { year: selectedYear });
+            await axios.post(`${home.BASE_API}/api/iclr/year`, { year: selectedYear });
             
             // Fetch predictions for this year
             const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([

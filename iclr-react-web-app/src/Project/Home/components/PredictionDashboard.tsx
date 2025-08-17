@@ -46,7 +46,7 @@ const PredictionDashboard: React.FC<PredictionDashboardProps> = ({ className = '
   const fetchDataForYearAndPrompt = useCallback(async (year: string, prompt: string, id: string): Promise<DashboardItem> => {
     try {
       // Set the global year
-      await axios.post('/api/iclr/year', { year });
+      await axios.post(`${home.BASE_API}/api/iclr/year`, { year });
        
       // Fetch predictions
       const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([

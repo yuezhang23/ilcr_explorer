@@ -141,7 +141,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
     setIsLoading(true);
     try {
       // Set the global year
-      await axios.post('/api/iclr/year', { year });
+      await axios.post(`${home.BASE_API}/api/iclr/year`, { year });
     } catch (error) {
       console.error('Error setting year:', error);
     } finally {
@@ -161,7 +161,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
     setIsLoadingPredictions(true);
     try {
       // Set the global year to fetch predictions for this specific year
-      await axios.post('/api/iclr/year', { year: selectedYear });
+      await axios.post(`${home.BASE_API}/api/iclr/year`, { year: selectedYear });
       
       // Fetch predictions for this year
       const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([

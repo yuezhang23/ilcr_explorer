@@ -9,6 +9,8 @@ interface YearContextType {
 }
 
 const YearContext = createContext<YearContextType | undefined>(undefined);
+export const BASE_API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
+
 
 export const useYear = () => {
   const context = useContext(YearContext);
@@ -59,7 +61,7 @@ export const YearProvider: React.FC<YearProviderProps> = ({ children }) => {
   useEffect(() => {
     const fetchYearConfig = async () => {
       try {
-        const response = await axios.get('/api/iclr/year');
+        const response = await axios.get(`${BASE_API}/api/iclr/year`);
         setCurrentYear(response.data.currentYear);
         setAvailableYears(response.data.availableYears);
       } catch (error) {
@@ -77,7 +79,7 @@ export const YearProvider: React.FC<YearProviderProps> = ({ children }) => {
 
   const setYear = async (year: string): Promise<boolean> => {
     try {
-      const response = await axios.post('/api/iclr/year', { year });
+      const response = await axios.post(`${BASE_API}/api/iclr/year`, { year });
       if (response.data.success) {
         setCurrentYear(response.data.currentYear);
         return true;

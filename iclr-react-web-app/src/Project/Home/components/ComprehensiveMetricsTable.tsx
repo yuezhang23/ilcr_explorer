@@ -81,7 +81,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
     setError(null);
     try {
       // Set the global year to fetch predictions for this specific year
-      await axios.post('/api/iclr/year', { year: currentYear });
+      await axios.post(`${home.BASE_API}/api/iclr/year`, { year: currentYear });
       
       const allMetrics: PromptMetrics[] = [];
       
@@ -278,8 +278,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                 <th scope="col" rowSpan={2} className="text-center align-middle" style={{ 
                   borderColor: '#e5e7eb',
                   color: '#374151',
-                  fontWeight: '600',
-                  minWidth: '180px'
+                  fontWeight: '600'
                 }}>Prompt Type</th>
                 <th scope="col" rowSpan={2} className="text-center align-middle" style={{ 
                   borderColor: '#e5e7eb',
