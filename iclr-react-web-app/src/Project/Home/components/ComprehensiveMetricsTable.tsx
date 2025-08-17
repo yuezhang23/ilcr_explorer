@@ -3,7 +3,6 @@ import axios from 'axios';
 import * as home from '../home';
 import { Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa6';
-import { useYear } from '../../../contexts/YearContext';
 
 interface ConfusionMatrix {
   truePositive: number;
@@ -20,6 +19,17 @@ interface Metrics {
   total: number;
 }
 
+interface PredictionStatsData {
+  year: number;
+  conference: string;
+  number_of_predictions: number;
+  rebuttal_in_review: number;
+  FP: number;
+  FN: number;
+  TP: number;
+  TN: number;
+}
+
 interface PromptMetrics {
   prompt: string;
   type: number;
@@ -34,19 +44,11 @@ interface ComprehensiveMetricsTableProps {
 }
 
 const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () => {
-  const { currentYear } = useYear(); // Get year from global context
+  const [ currentYear, setCurrentYear ] = useState<string>("2024");
   const [allPromptsMetrics, setAllPromptsMetrics] = useState<PromptMetrics[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedPrompts, setExpandedPrompts] = useState<Set<number>>(new Set());
-
-  // Helper function to update confusion matrix
-  const updateMatrix = (matrix: ConfusionMatrix, prediction: string, decision: string) => {
-    if (prediction === 'Accept' && decision === 'Accept') matrix.truePositive++;
-    else if (prediction === 'Reject' && decision === 'Reject') matrix.trueNegative++;
-    else if (prediction === 'Accept' && decision === 'Reject') matrix.falsePositive++;
-    else if (prediction === 'Reject' && decision === 'Accept') matrix.falseNegative++;
-  };
 
   // Calculate metrics from confusion matrix
   const calculateMetrics = (matrix: ConfusionMatrix): Metrics => {
@@ -75,84 +77,84 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
     });
   }, []);
 
-  // Fetch predictions for all prompts
-  const fetchAllPromptsPredictions = useCallback(async () => {
+  // Fetch prediction stats data from the schema
+  const fetchPredictionStats = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // Set the global year to fetch predictions for this specific year
-      await axios.post(`${home.BASE_API}/api/iclr/year`, { year: currentYear });
+            // Fetch prediction stats data for the current year
+      const response = await axios.get(`${home.BASE_API}/api/predictionStats/year/${currentYear}`);
+      const predictionStats = response.data;
+      
+      if (!Array.isArray(predictionStats) || predictionStats.length === 0) {
+        setError(`No prediction stats data found for year ${currentYear}`);
+        return;
+      }
       
       const allMetrics: PromptMetrics[] = [];
       
-      // Fetch predictions for each prompt
-      for (const promptCandidate of home.PROMPT_CANDIDATES) {
-        try {
-          const [rebuttalPreds, nonRebuttalPreds] = await Promise.all([
-            home.getPredsByPromptAndRebuttal(promptCandidate, 1), // With rebuttal
-            home.getPredsByPromptAndRebuttal(promptCandidate, 0)  // Without rebuttal
-          ]);
+      // Process each prompt's prediction stats
+      for (const promptStat of predictionStats) {
+          // Find non-rebuttal and rebuttal data for this prompt
+          const nonRebuttalData = promptStat.predictions.find((p: PredictionStatsData) => 
+            p.year === parseInt(currentYear) && p.rebuttal_in_review === 0
+          );
           
-          const processPredictions = (predictions: any[]) => predictions.map((p: any) => ({
-            ...p,
-            prediction: p.prediction.toLowerCase() === 'yes' || p.prediction.toLowerCase() === 'accept' ? "Accept" 
-              : p.prediction.toLowerCase() === 'no' || p.prediction.toLowerCase() === 'reject' ? "Reject" : "O"
-          }));
+          const rebuttalData = promptStat.predictions.find((p: PredictionStatsData) => 
+            p.year === parseInt(currentYear) && p.rebuttal_in_review === 1
+          );
           
-          const processedRebuttal = processPredictions(rebuttalPreds);
-          const processedNonRebuttal = processPredictions(nonRebuttalPreds);
+          // Create confusion matrices from the schema data
+          const nonRebuttalMatrix: ConfusionMatrix = {
+            truePositive: nonRebuttalData?.TP || 0,
+            trueNegative: nonRebuttalData?.TN || 0,
+            falsePositive: nonRebuttalData?.FP || 0,
+            falseNegative: nonRebuttalData?.FN || 0
+          };
           
-          // Calculate confusion matrices
-          const nonRebuttalMatrix: ConfusionMatrix = { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 };
-          const rebuttalMatrix: ConfusionMatrix = { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 };
+          const rebuttalMatrix: ConfusionMatrix = {
+            truePositive: rebuttalData?.TP || 0,
+            trueNegative: rebuttalData?.TN || 0,
+            falsePositive: rebuttalData?.FP || 0,
+            falseNegative: rebuttalData?.FN || 0
+          };
           
-          processedNonRebuttal.forEach(pred => {
-            if (pred.decision && pred.prediction) {
-              updateMatrix(nonRebuttalMatrix, pred.prediction, pred.decision);
-            }
-          });
-          
-          processedRebuttal.forEach(pred => {
-            if (pred.decision && pred.prediction) {
-              updateMatrix(rebuttalMatrix, pred.prediction, pred.decision);
-            }
-          });
-          
+          // Calculate metrics from the confusion matrices
           const nonRebuttalMetrics = calculateMetrics(nonRebuttalMatrix);
           const rebuttalMetrics = calculateMetrics(rebuttalMatrix);
           
-          // Find the type for this prompt
-          const promptType = home.PROMPT_TYPES.find(pt => pt.prompt === promptCandidate)?.type;
-          
-          allMetrics.push({
-            prompt: promptCandidate,
-            type: promptType,
-            nonRebuttalMatrix,
-            rebuttalMatrix,
-            nonRebuttalMetrics,
-            rebuttalMetrics,
-          });
-          
-        } catch (error) {
-          console.error(`Error fetching predictions for prompt: ${promptCandidate}`, error);
+          // Only add prompts that have data for the current year
+          if (nonRebuttalData || rebuttalData) {
+            allMetrics.push({
+              prompt: promptStat.prompt,
+              type: promptStat.prompt_type,
+              nonRebuttalMatrix,
+              rebuttalMatrix,
+              nonRebuttalMetrics,
+              rebuttalMetrics,
+            });
+          } else {
+            console.warn(`No data found for prompt "${promptStat.prompt}" in year ${currentYear}`);
+          }
         }
-      }
       
       setAllPromptsMetrics(allMetrics);
-      console.log(`Processed metrics for ${allMetrics.length} prompts`);
+      console.log(`Processed metrics for ${allMetrics.length} prompts from prediction stats`);
+      console.log('Sample data structure:', predictionStats[0]);
+      console.log('Processed metrics:', allMetrics[0]);
       
     } catch (error) {
-      console.error('Error fetching all prompts predictions:', error);
-      setError('Failed to fetch metrics data');
+      console.error('Error fetching prediction stats:', error);
+      setError('Failed to fetch prediction stats data');
     } finally {
       setIsLoading(false);
     }
   }, [currentYear]);
 
-  // Effect to fetch all prompts predictions when year changes
+  // Effect to fetch prediction stats when year changes
   useEffect(() => {
-    fetchAllPromptsPredictions();
-  }, [currentYear, fetchAllPromptsPredictions]);
+    fetchPredictionStats();
+  }, [currentYear, fetchPredictionStats]);
 
   // Loading state
   if (isLoading) {
@@ -165,7 +167,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
           borderRadius: '12px 12px 0 0'
         }}>
           <div className="d-flex align-items-center">
-            <h6 className="mb-0">Performance Metrics</h6>
+            <h6 className="mb-0">Prediction Performance Metrics</h6>
           </div>
         </div>
         <div className="card-body">
@@ -174,42 +176,13 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
-              <div className="mt-3 text-muted">Loading metrics data...</div>
+              <div className="mt-3 text-muted">Loading prediction stats data...</div>
             </div>
           </div>
         </div>
       </div>
     );
   }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="card border-0 shadow-sm mt-4" style={{ borderRadius: '12px' }}>
-        <div className="card-header prediction-errors-header" style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px 12px 0 0'
-        }}>
-          <h6 className="mb-0">All Prompts Performance Metrics</h6>
-        </div>
-        <div className="card-body">
-          <div className="alert alert-danger" role="alert">
-            <i className="fas fa-exclamation-triangle me-2"></i>
-            {error}
-            <button 
-              className="btn btn-sm btn-outline-danger ms-3" 
-              onClick={fetchAllPromptsPredictions}
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="card border-0 shadow-sm mt-4" style={{ borderRadius: '12px' }}>
       <div className="card-header prediction-errors-header" style={{ 
@@ -219,8 +192,29 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
         borderRadius: '12px 12px 0 0'
       }}>
         <div className="d-flex justify-content-between align-items-center"> 
-          <h6 className="mb-0">Performance Metrics</h6>
-          <div className="d-flex justify-content-end mb-3">
+          <h6 className="mb-0">Prediction Performance Metrics</h6>
+          <div className="d-flex justify-content-end mb-3 align-items-center">
+            <div className="me-3">
+              <select
+                id="yearSelect"
+                value={currentYear}
+                onChange={(e) => setCurrentYear(e.target.value)}
+                className="form-select form-select-sm"
+                style={{
+                  fontSize: '0.875rem',
+                  padding: '6px 12px',
+                  borderRadius: '12px',
+                  border: '1px solid #667eea',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  minWidth: '80px'
+                }}
+              >
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+              </select>
+            </div>
             <button 
               onClick={() => {
                 if (expandedPrompts.size === allPromptsMetrics.length) {
@@ -255,9 +249,33 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
         </div>  
       </div>
       <div className="card-body">
-        {/* Global Toggle Button */}
-       
-        <div className="table-responsive" style={{ maxHeight: '70vh', overflow: 'auto' }}>
+        {/* Show message if no data */}
+        {allPromptsMetrics.length === 0 && !isLoading && !error && (
+          <div className="text-center py-4">
+            <div className="text-muted">
+              <i className="fas fa-info-circle me-2"></i>
+              No prediction stats data available for the selected year.
+            </div>
+          </div>
+        )}
+        {error && (
+            <div className="card-body">
+             <div className="alert alert-danger" role="alert">
+               <i className="fas fa-exclamation-triangle me-2"></i>
+               {error}
+               <button 
+                 className="btn btn-sm btn-outline-danger ms-3" 
+                 onClick={fetchPredictionStats}
+               >
+                 Retry Fetch
+               </button>
+            </div>
+          </div>
+        )}
+        
+        {/* Table only shows when there's data */}
+        {allPromptsMetrics.length > 0 && !error && (
+          <div className="table-responsive" style={{ maxHeight: '70vh', overflow: 'auto' }}>
           <table className="table table-sm table-bordered" style={{ 
             borderColor: '#e5e7eb',
             fontSize: '0.875rem'
@@ -505,6 +523,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
             </tbody>
           </table>
         </div>
+        )}
       </div>
     </div>
   );
