@@ -3,7 +3,7 @@ axios.defaults.withCredentials = true;
 
 // export const BASE_API = process.env.REACT_APP_API_BASE;
 export const BREW_API = `/api/breweries`;
-//set as https://api.openbrewerydb.org/v1/breweries on netlify and in .env 
+//set as https://api.openbrewerydb.org/v1/breweries in production and in .env 
 
 
 export const randomBreweryFromAPI = async () => {

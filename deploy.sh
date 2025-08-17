@@ -16,7 +16,7 @@ echo ""
 echo "📋 Prerequisites Check:"
 echo "1. Make sure your code is committed and pushed to GitHub"
 echo "2. Have your MongoDB connection string ready"
-echo "3. Be ready to deploy to Netlify and Render"
+echo "3. Be ready to deploy to Render"
 echo ""
 
 read -p "Are you ready to proceed? (y/n): " -n 1 -r
@@ -27,16 +27,10 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
-echo "🔧 Preparing Frontend for Netlify..."
+echo "🔧 Preparing Frontend..."
 cd iclr-react-web-app
 
-# Check if netlify.toml exists
-if [ ! -f "netlify.toml" ]; then
-    echo "❌ netlify.toml not found. Please create it first."
-    exit 1
-fi
-
-echo "✅ Frontend is ready for Netlify deployment"
+echo "✅ Frontend is ready for deployment"
 echo ""
 
 echo "🔧 Preparing Backend for Render..."
@@ -63,15 +57,14 @@ echo "     * NODE_ENV=production"
 echo "     * FRONTEND_URL (will set after frontend deployment)"
 echo ""
 echo "2. 🌐 DEPLOY FRONTEND:"
-echo "   - Go to https://netlify.com"
-echo "   - Create new site from Git"
+echo "   - Choose your preferred hosting platform (Vercel, GitHub Pages, etc.)"
 echo "   - Connect your GitHub repo"
 echo "   - Set build command: npm run build:production"
 echo "   - Set publish directory: build"
 echo "   - Set environment variable REACT_APP_API_URL to your Render backend URL"
 echo ""
 echo "3. 🔗 UPDATE CORS:"
-echo "   - In Render dashboard, set FRONTEND_URL to your Netlify URL"
+echo "   - In Render dashboard, set FRONTEND_URL to your frontend URL"
 echo ""
 echo "4. ✅ TEST:"
 echo "   - Verify frontend can communicate with backend"

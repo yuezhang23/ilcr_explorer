@@ -1,44 +1,44 @@
-# Deployment Guide: Frontend on Netlify, Backend on Render
+# Deployment Guide: Frontend and Backend on Render
 
-## Frontend Deployment on Netlify
+## Frontend Deployment
 
 ### 1. Prepare Your Frontend
 
-Your React app is already configured with:
-- `netlify.toml` - Netlify configuration
+Your React app is configured with:
 - Build script in `package.json`
 
-### 2. Deploy to Netlify
+### 2. Deploy Your Frontend
 
-#### Option A: Deploy via Netlify UI
-1. Go to [netlify.com](https://netlify.com) and sign up/login
-2. Click "New site from Git"
+Choose your preferred hosting platform:
+
+#### Option A: Deploy via Vercel
+1. Go to [vercel.com](https://vercel.com) and sign up/login
+2. Click "New Project"
 3. Connect your GitHub repository
-4. **Important**: Netlify will automatically detect the `netlify.toml` configuration
-5. The `base = "iclr-react-web-app"` setting tells Netlify to:
-   - Use the `iclr-react-web-app` subdirectory
-   - Run `npm run build:production` from that directory
-   - Publish the `build` folder from that directory
-6. Set environment variables:
+4. Set the root directory to `iclr-react-web-app`
+5. Set build command: `npm run build:production`
+6. Set output directory: `build`
+7. Set environment variables:
    - `REACT_APP_API_URL`: Your Render backend URL
    - `REACT_APP_ENVIRONMENT`: `production`
-7. Deploy!
+8. Deploy!
 
-#### Option B: Deploy via Netlify CLI
-```bash
-# Install Netlify CLI
-npm install -g netlify-cli
+#### Option B: Deploy via GitHub Pages
+1. In your GitHub repository settings, enable GitHub Pages
+2. Set source to GitHub Actions
+3. Create a GitHub Actions workflow for building and deploying
+4. Set environment variables in the workflow
 
-# Login to Netlify
-netlify login
-
-# Deploy
-cd iclr-react-web-app
-netlify deploy --prod
-```
+#### Option C: Deploy via Render (Static Site)
+1. Go to [render.com](https://render.com)
+2. Create new Static Site
+3. Connect your GitHub repository
+4. Set root directory to `iclr-react-web-app`
+5. Set build command: `npm run build:production`
+6. Set publish directory: `build`
 
 ### 3. Update Backend CORS
-After getting your Netlify URL, update the `FRONTEND_URL` in your Render backend environment variables.
+After getting your frontend URL, update the `FRONTEND_URL` in your Render backend environment variables.
 
 ## Backend Deployment on Render
 
@@ -74,7 +74,7 @@ Your Node.js app is configured with:
 ### 3. Set Environment Variables
 In Render dashboard, set these environment variables:
 - `DB_CONNECTION_STRING`: Your MongoDB connection string
-- `FRONTEND_URL`: Your Netlify frontend URL
+- `FRONTEND_URL`: Your frontend URL
 - `NODE_ENV`: `production`
 - `PORT`: `10000` (Render will override this)
 
@@ -96,7 +96,7 @@ REACT_APP_ENVIRONMENT=production
 ### Backend (Render Environment Variables)
 ```
 DB_CONNECTION_STRING=mongodb+srv://username:password@cluster.mongodb.net/iclr_2024
-FRONTEND_URL=https://your-frontend-name.netlify.app
+FRONTEND_URL=https://your-frontend-url.com
 NODE_ENV=production
 PORT=10000
 ```
@@ -110,7 +110,7 @@ PORT=10000
 
 2. **Update Frontend Configuration**:
    - Update `package.json` build script with backend URL
-   - Deploy on Netlify
+   - Deploy on your chosen platform
 
 3. **Update Backend CORS**:
    - Set `FRONTEND_URL` in Render environment variables
