@@ -154,7 +154,7 @@ function Nav() {
           </div>
         
         </div>
-        <div className="me-3 position-relative">
+        <div className="me-2 position-relative">
             <button 
               className="btn dropdown-toggle" 
               onClick={() => toggleCollapse('analytics-collapse')}
