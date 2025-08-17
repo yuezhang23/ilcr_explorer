@@ -4,7 +4,6 @@ import { Provider } from 'react-redux';
 import store from './store';
 import { AuthProvider } from '../contexts/AuthContext';
 import Nav from './Nav';
-import Home from './Home';
 import Search from './Search';
 import Signin from './User/Signin';
 import Signup from './User/Signup';
@@ -14,6 +13,8 @@ import Claims from './User/Claims';
 import ProtectedRoute from '../components/ProtectedRoute';
 import RatingHome from './Home/rating';
 import PredictionDashboard from './Home/components/PredictionDashboard';
+import ComprehensiveMetricsTable from './Home/components/ComprehensiveMetricsTable';
+import AdminHome from './Home/index';
 
 export default function Project() {
   return (
@@ -23,9 +24,10 @@ export default function Project() {
           <Nav />
           <Routes>
               <Route path="/" element={<Navigate to="Home" />} />
-              <Route path="Home/*" element={<Home />} />
-              <Route path="Analytics/*" element={<RatingHome/>} />
-              <Route path="Dashboard/*" element={<PredictionDashboard/>} />
+              <Route path="Home/*" element={<AdminHome/>} />
+              <Route path="Analytics/Distribution/*" element={<RatingHome/>} />
+              <Route path="Analytics/Dashboard/*" element={<PredictionDashboard/>} />
+              <Route path="Analytics/Table/*" element={<ComprehensiveMetricsTable/>} />
               <Route path="Search" element={<Search />} />
               <Route path="User/Signin" element={<Signin />} />
               <Route path="User/Signup" element={<Signup />} />

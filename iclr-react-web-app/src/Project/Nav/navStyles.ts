@@ -142,7 +142,7 @@ export const navStyles = {
     cursor: 'pointer',
     transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
     fontSize: '0.95rem',
-    minWidth: '100px',
+    minWidth: '120px',
     border: 'none'
   },
   yearButton: {
@@ -176,8 +176,8 @@ export const navStyles = {
     top: '100%',
     left: '0',
     zIndex: 1001,
-    width: '100px',
-    minWidth: '100px',
+    width: '120px',
+    minWidth: '120px',
     backgroundColor: '#fff',
     border: '1px solid #dee2e6',
     borderRadius: '8px',
@@ -185,12 +185,13 @@ export const navStyles = {
     padding: '4px 0',
     overflow: 'hidden',
     position: 'absolute' as const,
-    marginTop: '4px'
+    marginTop: '4px',
+    boxSizing: 'border-box' as const
   },
   collapseItem: {
     fontSize: '0.9rem',
     fontWeight: '500',
-    padding: '8px 16px',
+    padding: '8px 12px',
     border: 'none',
     backgroundColor: 'transparent',
     cursor: 'pointer',
@@ -198,20 +199,30 @@ export const navStyles = {
     whiteSpace: 'nowrap' as const,
     transition: 'all 0.2s ease',
     width: '100%',
-    color: '#333'
+    maxWidth: '120px',
+    color: '#333',
+    display: 'block',
+    textDecoration: 'none',
+    outline: 'none',
+    boxSizing: 'border-box' as const
   },
   collapseItemActive: {
     backgroundColor: 'rgba(100, 100, 180, 0.1)',
     fontSize: '0.9rem',
     fontWeight: '600',
-    padding: '8px 16px',
+    padding: '8px 12px',
     border: 'none',
     color: '#6464b4',
     cursor: 'pointer',
     textAlign: 'left' as const,
     whiteSpace: 'nowrap' as const,
     transition: 'all 0.2s ease',
-    width: '100%'
+    width: '100%',
+    maxWidth: '120px',
+    display: 'block',
+    textDecoration: 'none',
+    outline: 'none',
+    boxSizing: 'border-box' as const
   },
   collapseItemHover: {
     backgroundColor: 'rgba(100, 100, 180, 0.05)',

@@ -7,6 +7,7 @@ import PredictionErrors from './PredictionErrors';
 import { adminStyles } from '../styles/adminStyles';
 import '../styles/dashboard.css';
 import { FaPlus } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 interface PredictionDashboardProps {
   className?: string;
@@ -41,89 +42,12 @@ const PredictionDashboard: React.FC<PredictionDashboardProps> = ({ className = '
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Helper function to process papers data (copied from rating.tsx)
-    // const processPapersData = useCallback((data: any[]) => {
-    //   return data.map((m: any) => {
-    //     const { metareviews, ...bib } = m;
-    //     const ratings = [];
-    //     const confidences = [];
-    //     const soundnesses = [];
-    //     const presentations = [];
-    //     const contributions = [];
-    //     const decisions = [];
-        
-    //     for (const o of metareviews) {
-    //       if (o.values && o.values.rating) {
-    //         const ratingValue = parseFloat(o.values.rating);
-    //         if (!isNaN(ratingValue)) {
-    //           ratings.push(ratingValue);
-    //         }
-    //       }
-    //       if (o.values && o.values.confidence) {
-    //         const confidenceValue = parseFloat(o.values.confidence);
-    //         if (!isNaN(confidenceValue)) {
-    //           confidences.push(confidenceValue);
-    //         }
-    //       }
-    //       if (o.values && o.values.soundness) {
-    //         const soundnessValue = parseFloat(o.values.soundness);
-    //         if (!isNaN(soundnessValue)) {
-    //           soundnesses.push(soundnessValue);
-    //         }
-    //       }
-    //       if (o.values && o.values.presentation) {
-    //         const presentationValue = parseFloat(o.values.presentation);
-    //         if (!isNaN(presentationValue)) {
-    //           presentations.push(presentationValue);
-    //         }
-    //       }
-    //       if (o.values && o.values.contribution) {
-    //         const contributionValue = parseFloat(o.values.contribution);
-    //         if (!isNaN(contributionValue)) {
-    //           contributions.push(contributionValue);
-    //         }
-    //       }
-    //       if (o.values && o.values.decision) {
-    //         const decisionValue = o.values.decision.toLowerCase() === 'no' || o.values.decision.toLowerCase() === 'reject' ? 'Reject' : 'Accept';
-    //         if (decisionValue) {
-    //           decisions.push(decisionValue);
-    //         }
-    //       }
-    //     }
-        
-    //     const rating = ratings.length > 0 ? parseFloat((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)) : 0;
-    //     const confidence = confidences.length > 0 ? parseFloat((confidences.reduce((a, b) => a + b, 0) / confidences.length).toFixed(2)) : 0;
-    //     const soundness = soundnesses.length > 0 ? parseFloat((soundnesses.reduce((a, b) => a + b, 0) / soundnesses.length).toFixed(2)) : 0;
-    //     const presentation = presentations.length > 0 ? parseFloat((presentations.reduce((a, b) => a + b, 0) / presentations.length).toFixed(2)) : 0;
-    //     const contribution = contributions.length > 0 ? parseFloat((contributions.reduce((a, b) => a + b, 0) / contributions.length).toFixed(2)) : 0;
-
-    //     return {
-    //       ...bib,
-    //       rating,
-    //       confidence,
-    //       soundness,
-    //       presentation,
-    //       contribution,
-    //       ratings,
-    //       confidences,
-    //       soundnesses,
-    //       presentations,
-    //       contributions,
-    //       decisions
-    //     };
-    //   });
-    // }, []);
-
   // Fetch data for a specific year and prompt combination
   const fetchDataForYearAndPrompt = useCallback(async (year: string, prompt: string, id: string): Promise<DashboardItem> => {
     try {
       // Set the global year
       await axios.post('/api/iclr/year', { year });
-      
-      // Fetch papers data
-      // const papersResult = await home.findAllIclrSubmissionsWithPartialMetareviews();
-      // const processedPapers = processPapersData(papersResult.data);
-      
+       
       // Fetch predictions
       const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([
         home.getPredsByPromptAndRebuttal(prompt, 1), // With rebuttal
@@ -213,7 +137,7 @@ const PredictionDashboard: React.FC<PredictionDashboardProps> = ({ className = '
   }, []);
 
   return (
-    <div className={`prediction-dashboard ${className} mx-2`}>
+    <div className={`prediction-dashboard ${className} mx-4`}>
       {/* Dashboard Header with Plus Button */}
       <div className="row mb-3">
         <div className="col-12">
@@ -229,6 +153,13 @@ const PredictionDashboard: React.FC<PredictionDashboardProps> = ({ className = '
               >
                 <FaPlus/>
               </button>
+              <Link
+                to="/Table/"
+                className="btn"
+                data-path="Dashboard"
+              >
+                Table
+              </Link>   
             </div>
             <div className="text-muted">
               {dashboardItems.length} card{dashboardItems.length !== 1 ? 's' : ''}

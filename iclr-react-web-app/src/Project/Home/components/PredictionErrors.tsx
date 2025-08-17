@@ -4,6 +4,7 @@ import PredictionMismatchTable from './PredictionMismatchTable';
 import RebuttalToggle from './RebuttalToggle';
 import YearDropdown from './YearDropdown';
 import PromptDropdown from './PromptDropdown';
+import ComprehensiveMetricsTable from './ComprehensiveMetricsTable';
 import * as home from '../home';
 import { FaEye, FaEyeSlash } from 'react-icons/fa6';
 
@@ -38,6 +39,8 @@ interface Metrics {
   f1Score: string;
   total: number;
 }
+
+
 
 // // Helper function to process papers data (copied from rating.tsx)
 // function processPapersData(data: any[]) {
@@ -129,6 +132,8 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
   const [isLoadingPredictions, setIsLoadingPredictions] = useState<boolean>(false);
   const [isAbstractExpanded, setIsAbstractExpanded] = useState<boolean>(false);
+  
+
 
   // Handle year selection change
   const handleYearChange = useCallback(async (year: string) => {
@@ -148,6 +153,8 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   const handlePromptChange = useCallback((prompt: string) => {
     setSelectedPrompt(prompt);
   }, []);
+
+
 
   // Fetch predictions for the selected prompt and year
   const fetchPredictions = useCallback(async () => {
@@ -188,6 +195,8 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   useEffect(() => {
     fetchPredictions();
   }, [selectedYear, selectedPrompt, fetchPredictions]);
+
+
 
   // Memoize processed papers
   // const processedAllPapers = useMemo(() => processPapersData(allPapers), [allPapers]);
@@ -453,6 +462,12 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                     label="Rebuttal"
                     className="mt-2"
                   />
+                  <button
+                    className="btn btn-sm border-0 px-0 justify-content-end"
+                    // onClick={addSummary}
+                  >
+                    Table
+                  </button>
                 {removeButton && (
                   <div className="d-flex justify-content-end">
                     {removeButton}
@@ -478,6 +493,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
               </div> */}
             </div>
           </div>
+
         </>
       )}
 

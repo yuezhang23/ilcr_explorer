@@ -7,6 +7,7 @@ import { useYear } from "../../contexts/YearContext";
 
 import { FaEarlybirds } from "react-icons/fa6";
 import { navStyles } from "./navStyles";
+import "./collapseStyles.css";
 
 
 function Nav() {
@@ -19,6 +20,7 @@ function Nav() {
   const [selectedConference, setSelectedConference] = useState<string>('ICLR');
   
   const availableConferences = ['ICLR', 'NeurIPS', 'ICML', 'ACL'];
+  const availableForms = ['Distribution', 'Dashboard', 'Table'];
 
   const handleSignout = () => {
     logout();
@@ -210,30 +212,63 @@ function Nav() {
               </div>
             </Collapse>
           </div>
-        </div>
         
-        <Link
-          to="/Analytics/"
-          className="btn"
-          data-path="Analytics"
-          style={pathname.includes("Analytics") ? navStyles.navLinkActive : navStyles.navLink}
-          onMouseEnter={handleNavLinkMouseEnter}
-          onMouseLeave={handleNavLinkMouseLeave}
-        >
-          Analytics
-        </Link>
-
-        <Link
-          to="/Dashboard/"
-          className="btn"
-          data-path="Dashboard"
-          style={pathname.includes("Dashboard") ? navStyles.navLinkActive : navStyles.navLink}
-          onMouseEnter={handleNavLinkMouseEnter}
-          onMouseLeave={handleNavLinkMouseLeave}
-        >
-          Stats
-        </Link>
-
+        </div>
+        <div className="me-3 position-relative">
+            <button 
+              className="btn dropdown-toggle" 
+              onClick={() => toggleCollapse('analytics-collapse')}
+              style={navStyles.conferenceButton}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.borderColor = 'transparent';
+                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.8)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              Analytics
+            </button>
+            
+            <Collapse in={openCollapse === 'analytics-collapse'}>
+              <div 
+                className="collapse-menu position-absolute"
+                style={navStyles.collapseMenu}
+                onMouseLeave={() => {
+                  setOpenCollapse(null);
+                }}
+              > 
+              {availableForms.map((form: string) => (
+                <Link
+                  key={form}
+                  to={`/Analytics/${form}`}
+                  className="collapse-item"
+                  style={{
+                    ...navStyles.collapseItem,
+                    display: 'block',
+                    textDecoration: 'none',
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    Object.assign(e.currentTarget.style, navStyles.collapseItemHover);
+                  }}
+                  onMouseLeave={(e) => {
+                    Object.assign(e.currentTarget.style, navStyles.collapseItem);
+                  }}
+                  onClick={() => setOpenCollapse(null)}
+                >
+                  {form}
+                </Link>
+              ))}
+              </div>
+            </Collapse>
+          </div>
+        
         <Link
           to="/Home"
           className="btn"

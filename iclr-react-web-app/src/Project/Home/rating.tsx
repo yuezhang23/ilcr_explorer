@@ -455,7 +455,7 @@ function RatingHome() {
                             </div>
                         </div>
                         <div className="card-body p-4">
-                            {/* {isLoadingPredictions ? (
+                            {isLoadingPredictions ? (
                                 <div className="d-flex justify-content-center align-items-center" style={ratingStyles.loadingContainer}>
                                     <div className="text-center">
                                         <div className="spinner-border text-primary" role="status">
@@ -481,7 +481,7 @@ function RatingHome() {
                                     setField={setField}
                                     isLoadingPredictions={isLoadingPredictions}
                                 />
-                            )} */}
+                            )}
                         </div>
                     </div>
                 )}
