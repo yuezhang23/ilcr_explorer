@@ -2,10 +2,10 @@ import axios from "axios";
 axios.defaults.withCredentials = true;
 
 
-// export const BASE_API = process.env.REACT_APP_API_BASE;
-export const ICLR_API = `/api/iclr`;
-export const ADMIN_API = `/api/admin`;
-export const PROMPT_API = `/api/prompt`;
+export const BASE_API = process.env.REACT_APP_API_BASE;
+export const ICLR_API = `${BASE_API}/api/iclr`;
+export const ADMIN_API = `${BASE_API}/api/admin`;
+export const PROMPT_API = `${BASE_API}/api/prompt`;
 
 export const PROMPT_CANDIDATES = [
     "Given the following reviews (text), determine if a paper would be accepted (Yes) or not (No) by an academic conference.",
