@@ -376,7 +376,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                     }}>
                       <div className="d-flex flex-column align-items-center">
 
-                          {home.PROMPT_CANDIDATES.indexOf(promptMetrics.prompt) > 0 ? home.PROMPT_CANDIDATES.indexOf(promptMetrics.prompt) + 1 : home.PROMPT_CANDIDATES.length} 
+                          {home.PROMPT_CANDIDATES.indexOf(promptMetrics.prompt) >= 0 ? home.PROMPT_CANDIDATES.indexOf(promptMetrics.prompt) + 1 : home.PROMPT_CANDIDATES.length} 
 
                         <button 
                           onClick={() => togglePrompt(index)}
