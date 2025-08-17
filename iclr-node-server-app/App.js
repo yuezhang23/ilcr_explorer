@@ -7,7 +7,6 @@ import Iclr from "./02ICLR/routes.js";
 import Public from "./03PublicComments/routes.js";
 import Prompt from "./05Prompt/routes.js";
 import Test from "./Test.js";
-import dotenv from 'dotenv';
 
 const app = express();
 const CONNECTION_STRING = process.env.DB_CONNECTION_STRING;
@@ -15,8 +14,24 @@ mongoose.connect(CONNECTION_STRING, {dbName: "iclr_2024"});
 
 app.use(cors({
   credentials: true,
-  origin: [process.env.FRONTEND_URL, "http://localhost:3000"] 
-  // in .env and environment var
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      "http://localhost:3000",
+      "https://localhost:3000"
+    ].filter(Boolean); // Remove undefined values
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Log blocked origins for debugging
+    console.log('Blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  }
 }));
 
 app.use(express.json({ limit: '50mb' }));
