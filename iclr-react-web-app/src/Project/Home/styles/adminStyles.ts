@@ -189,7 +189,7 @@ export const adminStyles = {
       backgroundColor: '#f3f4f6',
       color: '#6b7280',
       border: 'none',
-      fontSize: '0.8rem',
+      fontSize: '0.75rem',
       padding: '6px 16px',
       transition: 'all 0.3s ease'
     },
@@ -237,13 +237,15 @@ export const adminStyles = {
       borderRadius: '8px',
       whiteSpace: 'normal' as const,
       wordBreak: 'break-word' as const,
-      fontSize: '0.9rem',
-      lineHeight: '1.6',
-      maxHeight: '200px',
-      maxWidth: '600px', // Increased width for better readability
-      minWidth: '400px', // Minimum width to ensure good layout
+      fontSize: '0.8rem',
+      lineHeight: '1.4',
+      maxHeight: '150px',
+      maxWidth: '100%',
+      minWidth: 'auto',
       overflowY: 'auto' as const,
-      color: '#4b5563'
+      color: '#4b5563',
+      padding: '12px',
+      margin: '0 auto'
     }
   },
 

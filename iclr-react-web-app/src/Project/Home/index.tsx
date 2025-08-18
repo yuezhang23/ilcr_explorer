@@ -430,7 +430,7 @@ const PaperRow = React.memo(({
                     </div>
                     {isAbstractExpanded && (
                         <div 
-                            className="mt-3 p-4 rounded-3"
+                            className="mt-3 rounded-3"
                             style={adminStyles.abstract.container}
                         >
                             {paper.abstract}
@@ -558,7 +558,8 @@ function AdminHome() {
     // Separate state for UI interactions that don't affect data
     const [uiState, setUiState] = useState({
         expandedAbstracts: new Set<number>(),
-        expandedAuthors: new Set<number>()
+        expandedAuthors: new Set<number>(),
+        showCurrentPrompt: false
     });
 
     const recordsPerPage = 20;
@@ -629,7 +630,8 @@ function AdminHome() {
             setState(prev => ({ ...prev, currentPage: 1 }));
             setUiState(prev => ({
                 expandedAbstracts: new Set(),
-                expandedAuthors: new Set()
+                expandedAuthors: new Set(),
+                showCurrentPrompt: prev.showCurrentPrompt
             }));
         }, 300);
 
@@ -724,7 +726,7 @@ function AdminHome() {
     }, []);
 
     const setUserRebuttal = useCallback((value: boolean) => {
-        setState(prev => ({ ...prev, user_rebuttal: value }));
+        setState(prev => ({ ...prev, user_index: value }));
     }, []);
 
     const toggleAbstract = useCallback((index: number) => {
@@ -813,17 +815,63 @@ function AdminHome() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="d-flex justify-content-end mt-2 me-5" style={{
+                                {/* Prompt Expansion Component */}
+                                <div className="d-flex justify-content-end align-items-center mt-2 mx-4" style={{
                                     borderBottom: '1px solid #e9ecef',
                                     backgroundColor: '#ffffff',
                                     borderBottomLeftRadius: '8px',
                                     borderBottomRightRadius: '8px'
                                 }}>
+                                    <div className="d-flex align-items-center">
+                                        <button 
+                                            onClick={() => setUiState(prev => ({ 
+                                                ...prev, 
+                                                showCurrentPrompt: !prev.showCurrentPrompt 
+                                            }))}
+                                            className="btn btn-sm rounded-pill mx-2 mb-2"
+                                            style={{
+                                                color: 'black',
+                                                fontSize: '0.8rem',
+                                                padding: '4px 12px',
+                                                transition: 'all 0.3s ease',
+                                                backgroundColor: 'transparent'
+                                            }}
+                                        >
+                                            {uiState.showCurrentPrompt ? (
+                                                <>
+                                                    <FaEyeSlash />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaEye />
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
                                     <RebuttalToggle
                                         checked={state.pub_rebuttal}
                                         onChange={setPubRebuttal}
                                     />
                                 </div>
+                                
+                                {/* Prompt Content Display */}
+                                {uiState.showCurrentPrompt && (
+                                    <div className="mx-4 mt-2 mb-3">
+                                        <div className="card border-0 shadow-sm" style={{ borderRadius: '8px' }}>
+                                            <div className="bg-light p-3 rounded" style={{ 
+                                                backgroundColor: '#ffffff',
+                                                border: '1px solid #e2e8f0',
+                                                whiteSpace: 'pre-wrap',
+                                                fontFamily: 'monospace',
+                                                fontSize: '0.8rem',
+                                                lineHeight: '1.4',
+                                                color: '#374151'
+                                            }}>
+                                                {state.currentPrompt}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="card-body p-0 flex-grow-1" style={{ ...adminStyles.table.body, overflow: 'auto' }}>
                                     {state.isLoadingData && (
                                         <div className="text-center py-5" style={adminStyles.loadingState.container}>
