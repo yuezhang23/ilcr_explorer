@@ -1,68 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { usePredictionStats } from '../../hooks/usePredictionStats';
 import * as home from '../home';
-import { Link } from 'react-router-dom';
 import { FaEye, FaEyeSlash } from 'react-icons/fa6';
 
-interface ConfusionMatrix {
-  truePositive: number;
-  trueNegative: number;
-  falsePositive: number;
-  falseNegative: number;
-}
-
-interface Metrics {
-  accuracy: string;
-  precision: string;
-  recall: string;
-  f1Score: string;
-  total: number;
-}
-
-interface PredictionStatsData {
-  year: number;
-  conference: string;
-  number_of_predictions: number;
-  rebuttal_in_review: number;
-  FP: number;
-  FN: number;
-  TP: number;
-  TN: number;
-}
-
-interface PromptMetrics {
-  prompt: string;
-  type: number;
-  nonRebuttalMatrix: ConfusionMatrix;
-  rebuttalMatrix: ConfusionMatrix;
-  nonRebuttalMetrics: Metrics;
-  rebuttalMetrics: Metrics;
-}
+// Types are now imported from the reducer
 
 interface ComprehensiveMetricsTableProps {
   // Remove selectedYear prop since we'll use global context
 }
 
 const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () => {
-  const [ currentYear, setCurrentYear ] = useState<string>("2024");
-  const [allPromptsMetrics, setAllPromptsMetrics] = useState<PromptMetrics[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const { allPromptsMetrics, isLoading, error, currentYear, fetchDataForYear, changeYear, clearErrorState } = usePredictionStats();
   const [expandedPrompts, setExpandedPrompts] = useState<Set<number>>(new Set());
 
-  // Calculate metrics from confusion matrix
-  const calculateMetrics = (matrix: ConfusionMatrix): Metrics => {
-    const total = matrix.truePositive + matrix.trueNegative + matrix.falsePositive + matrix.falseNegative;
-    const accuracy = total > 0 ? ((matrix.truePositive + matrix.trueNegative) / total * 100).toFixed(1) : '0.0';
-    const precision = (matrix.truePositive + matrix.falsePositive) > 0 ? 
-      (matrix.truePositive / (matrix.truePositive + matrix.falsePositive) * 100).toFixed(1) : '0.0';
-    const recall = (matrix.truePositive + matrix.falseNegative) > 0 ? 
-      (matrix.truePositive / (matrix.truePositive + matrix.falseNegative) * 100).toFixed(1) : '0.0';
-    const f1Score = (parseFloat(precision) + parseFloat(recall)) > 0 ? 
-      ((2 * parseFloat(precision) * parseFloat(recall)) / (parseFloat(precision) + parseFloat(recall))).toFixed(1) : '0.0';
-    
-    return { accuracy, precision, recall, f1Score, total };
-  };
+  // Get available years from the data
+  const availableYears = ['2024', '2025', '2026'];
+
+  // calculateMetrics function is now in the reducer
 
   // Toggle prompt expansion
   const togglePrompt = useCallback((index: number) => {
@@ -77,84 +31,15 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
     });
   }, []);
 
-  // Fetch prediction stats data from the schema
-  const fetchPredictionStats = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-            // Fetch prediction stats data for the current year
-      const response = await axios.get(`${home.BASE_API}/api/predictionStats/year/${currentYear}`);
-      const predictionStats = response.data;
-      
-      if (!Array.isArray(predictionStats) || predictionStats.length === 0) {
-        setError(`No prediction stats data found for year ${currentYear}`);
-        return;
-      }
-      
-      const allMetrics: PromptMetrics[] = [];
-      
-      // Process each prompt's prediction stats
-      for (const promptStat of predictionStats) {
-          // Find non-rebuttal and rebuttal data for this prompt
-          const nonRebuttalData = promptStat.predictions.find((p: PredictionStatsData) => 
-            p.year === parseInt(currentYear) && p.rebuttal_in_review === 0
-          );
-          
-          const rebuttalData = promptStat.predictions.find((p: PredictionStatsData) => 
-            p.year === parseInt(currentYear) && p.rebuttal_in_review === 1
-          );
-          
-          // Create confusion matrices from the schema data
-          const nonRebuttalMatrix: ConfusionMatrix = {
-            truePositive: nonRebuttalData?.TP || 0,
-            trueNegative: nonRebuttalData?.TN || 0,
-            falsePositive: nonRebuttalData?.FP || 0,
-            falseNegative: nonRebuttalData?.FN || 0
-          };
-          
-          const rebuttalMatrix: ConfusionMatrix = {
-            truePositive: rebuttalData?.TP || 0,
-            trueNegative: rebuttalData?.TN || 0,
-            falsePositive: rebuttalData?.FP || 0,
-            falseNegative: rebuttalData?.FN || 0
-          };
-          
-          // Calculate metrics from the confusion matrices
-          const nonRebuttalMetrics = calculateMetrics(nonRebuttalMatrix);
-          const rebuttalMetrics = calculateMetrics(rebuttalMatrix);
-          
-          // Only add prompts that have data for the current year
-          if (nonRebuttalData || rebuttalData) {
-            allMetrics.push({
-              prompt: promptStat.prompt,
-              type: promptStat.prompt_type,
-              nonRebuttalMatrix,
-              rebuttalMatrix,
-              nonRebuttalMetrics,
-              rebuttalMetrics,
-            });
-          } else {
-            console.warn(`No data found for prompt "${promptStat.prompt}" in year ${currentYear}`);
-          }
-        }
-      
-      setAllPromptsMetrics(allMetrics);
-      console.log(`Processed metrics for ${allMetrics.length} prompts from prediction stats`);
-      console.log('Sample data structure:', predictionStats[0]);
-      console.log('Processed metrics:', allMetrics[0]);
-      
-    } catch (error) {
-      console.error('Error fetching prediction stats:', error);
-      setError('Failed to fetch prediction stats data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentYear]);
-
   // Effect to fetch prediction stats when year changes
   useEffect(() => {
-    fetchPredictionStats();
-  }, [currentYear, fetchPredictionStats]);
+    fetchDataForYear(currentYear);
+  }, [currentYear, fetchDataForYear]);
+
+  // Effect to clear error when year changes
+  useEffect(() => {
+    clearErrorState();
+  }, [currentYear, clearErrorState]);
 
   // Loading state
   if (isLoading) {
@@ -198,7 +83,9 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
               <select
                 id="yearSelect"
                 value={currentYear}
-                onChange={(e) => setCurrentYear(e.target.value)}
+                onChange={(e) => {
+                  changeYear(e.target.value);
+                }}
                 className="form-select form-select-sm"
                 style={{
                   fontSize: '0.875rem',
@@ -210,9 +97,9 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                   minWidth: '80px'
                 }}
               >
-                <option value="2026">2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
+                {availableYears.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
               </select>
             </div>
             <button 
@@ -265,7 +152,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                {error}
                <button 
                  className="btn btn-sm btn-outline-danger ms-3" 
-                 onClick={fetchPredictionStats}
+                 onClick={() => fetchDataForYear(currentYear)}
                >
                  Retry Fetch
                </button>
@@ -364,9 +251,9 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
             </thead>
             <tbody>
               {allPromptsMetrics.map((promptMetrics, index) => (
-                <React.Fragment key={index}>
+                <React.Fragment key={`prompt-${index}`}>
                   {/* Non-Rebuttal Row */}
-                  <tr style={{ 
+                  <tr key={`non-rebuttal-${index}`} style={{ 
                     backgroundColor: '#ffffff',
                     borderColor: '#e5e7eb'
                   }}>
@@ -449,7 +336,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                     }}>{promptMetrics.nonRebuttalMetrics.total}</td>
                   </tr>
                   {/* Rebuttal Row */}
-                  <tr style={{ 
+                  <tr key={`rebuttal-${index}`} style={{ 
                     backgroundColor: '#ffffff',
                     borderColor: '#e5e7eb'
                   }}>
@@ -496,7 +383,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                   </tr>
                   {/* Prompt Content Row - Only show when expanded */}
                   {expandedPrompts.has(index) && (
-                    <tr style={{ 
+                    <tr key={`prompt-content-${index}`} style={{ 
                       backgroundColor: '#f8fafc',
                       borderColor: '#e5e7eb'
                     }}>

@@ -12,6 +12,11 @@ interface PredictionErrorsProps {
   showMismatch: boolean;
   setShowMismatch: (show: boolean) => void;
   removeButton?: React.ReactNode;
+  allPromptsMetrics: any[];
+  isLoading: boolean;
+  error: string | null;
+  fetchData: (year: string) => void;
+  clearErrorState: () => void;
 }
 
 interface ErrorDetail {
@@ -40,113 +45,30 @@ interface Metrics {
   total: number;
 }
 
-
-
-// // Helper function to process papers data (copied from rating.tsx)
-// function processPapersData(data: any[]) {
-//     return data.map((m: any) => {
-//         const {metareviews, ...bib} = m;
-//         const ratings = [];
-//         const confidences = [];
-//         const soundnesses = [];
-//         const presentations = [];
-//         const contributions = [];
-//         const decisions = [];
-//         for (const o of metareviews) {
-//             if (o.values && o.values.rating) {
-//                 const ratingValue = parseFloat(o.values.rating);
-//                 if (!isNaN(ratingValue)) {
-//                     ratings.push(ratingValue);
-//                 }
-//             }
-//             if (o.values && o.values.confidence) {
-//                 const confidenceValue = parseFloat(o.values.confidence);
-//                 if (!isNaN(confidenceValue)) {
-//                     confidences.push(confidenceValue);
-//                 }
-//             }
-//             if (o.values && o.values.soundness) {
-//                 const soundnessValue = parseFloat(o.values.soundness);
-//                 if (!isNaN(soundnessValue)) {
-//                     soundnesses.push(soundnessValue);
-//                 }
-//             }
-//             if (o.values && o.values.presentation) {
-//                 const presentationValue = parseFloat(o.values.presentation);
-//                 if (!isNaN(presentationValue)) {
-//                     presentations.push(presentationValue);
-//                 }
-//             }
-//             if (o.values && o.values.contribution) {
-//                 const contributionValue = parseFloat(o.values.contribution);
-//                 if (!isNaN(contributionValue)) {
-//                     contributions.push(contributionValue);
-//                 }
-//             }
-//             if (o.values && o.values.decision) {
-//                 const decisionValue = o.values.decision.toLowerCase() === 'no' || o.values.decision.toLowerCase() === 'reject' ? 'Reject' : 'Accept';
-//                 if (decisionValue) {
-//                     decisions.push(decisionValue);
-//                 }
-//             }
-//         }
-        
-//         const rating = ratings.length > 0 ? parseFloat((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)) : 0;
-//         const confidence = confidences.length > 0 ? parseFloat((confidences.reduce((a, b) => a + b, 0) / confidences.length).toFixed(2)) : 0;
-//         const soundness = soundnesses.length > 0 ? parseFloat((soundnesses.reduce((a, b) => a + b, 0) / soundnesses.length).toFixed(2)) : 0;
-//         const presentation = presentations.length > 0 ? parseFloat((presentations.reduce((a, b) => a + b, 0) / presentations.length).toFixed(2)) : 0;
-//         const contribution = contributions.length > 0 ? parseFloat((contributions.reduce((a, b) => a + b, 0) / contributions.length).toFixed(2)) : 0;
-
-//         return {
-//             ...bib,
-//             rating,
-//             confidence,
-//             soundness,
-//             presentation,
-//             contribution,
-//             ratings,
-//             confidences,
-//             soundnesses,
-//             presentations,
-//             contributions,
-//             decisions
-//         };
-//     });
-// }
-
 const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   showMismatch,
   setShowMismatch,
   removeButton,
+  // Prediction stats props
+  allPromptsMetrics,
+  isLoading,
+  error,
+  fetchData,
+  clearErrorState,
 }) => {
   // Local state for year and prompt selections
   const [selectedYear, setSelectedYear] = useState<string>('2024');
   const [selectedPrompt, setSelectedPrompt] = useState<string>(home.BASIC_PROMPT);
   const [showRebuttal, setShowRebuttal] = useState(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  
-  // Data state
-  // const [allPapers, setAllPapers] = useState<any[]>([]);
-  const [rebuttalPredictions, setRebuttalPredictions] = useState<any[]>([]);
-  const [nonRebuttalPredictions, setNonRebuttalPredictions] = useState<any[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
-  const [isLoadingPredictions, setIsLoadingPredictions] = useState<boolean>(false);
+  const [isSettingYear, setIsSettingYear] = useState<boolean>(false);
   const [isAbstractExpanded, setIsAbstractExpanded] = useState<boolean>(false);
-  
 
+  // Local variable for current year
+  const currentYear = selectedYear;
 
   // Handle year selection change
-  const handleYearChange = useCallback(async (year: string) => {
+  const handleYearChange = useCallback((year: string) => {
     setSelectedYear(year);
-    setIsLoading(true);
-    try {
-      // Set the global year
-      await axios.post(`${home.BASE_API}/api/iclr/year`, { year });
-    } catch (error) {
-      console.error('Error setting year:', error);
-    } finally {
-      setIsLoading(false);
-    }
   }, []);
 
   // Handle prompt selection change
@@ -155,137 +77,50 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   }, []);
 
 
-
-  // Fetch predictions for the selected prompt and year
-  const fetchPredictions = useCallback(async () => {
-    setIsLoadingPredictions(true);
-    try {
-      // Set the global year to fetch predictions for this specific year
-      await axios.post(`${home.BASE_API}/api/iclr/year`, { year: selectedYear });
-      
-      // Fetch predictions for this year
-      const [rebuttalPredictions, nonRebuttalPredictions] = await Promise.all([
-        home.getPredsByPromptAndRebuttal(selectedPrompt, 1), // With rebuttal
-        home.getPredsByPromptAndRebuttal(selectedPrompt, 0)  // Without rebuttal
-      ]);
-      
-      const processPredictions = (predictions: any[]) => predictions.map((p: any) => ({
-        ...p,
-        prediction: p.prediction.toLowerCase() === 'yes' || p.prediction.toLowerCase() === 'accept' ? "Accept" 
-          : p.prediction.toLowerCase() === 'no' || p.prediction.toLowerCase() === 'reject' ? "Reject" : "O"
-      }));
-      
-      setRebuttalPredictions(processPredictions(rebuttalPredictions));
-      setNonRebuttalPredictions(processPredictions(nonRebuttalPredictions));
-      
-      console.log(`Processed predictions for year ${selectedYear} - Rebuttal: ${rebuttalPredictions.length}, Non-Rebuttal: ${nonRebuttalPredictions.length}`);
-    } catch (error) {
-      console.error('Error fetching predictions:', error);
-    } finally {
-      setIsLoadingPredictions(false);
-    }
-  }, [selectedYear, selectedPrompt]);
-
-  // Effect to fetch data when year changes
-  // useEffect(() => {
-  //   fetchAllData();
-  // }, [fetchAllData]);
-
-  // Effect to fetch predictions when year or prompt changes
-  useEffect(() => {
-    fetchPredictions();
-  }, [selectedYear, selectedPrompt, fetchPredictions]);
-
-
-
-  // Memoize processed papers
-  // const processedAllPapers = useMemo(() => processPapersData(allPapers), [allPapers]);
-  
-  // Memoize prediction maps
-  const rebuttalPredictionsMap = useMemo(() => {
-    const map = new Map();
-    rebuttalPredictions.forEach(pred => {
-      map.set(pred.paper_id, pred.prediction,);
-    });
-    return map;
-  }, [rebuttalPredictions]);
-  
-  const nonRebuttalPredictionsMap = useMemo(() => {
-    const map = new Map();
-    nonRebuttalPredictions.forEach(pred => {
-      map.set(pred.paper_id, pred.prediction);
-    });
-    return map;
-  }, [nonRebuttalPredictions]);
-
-
-  // Helper function to update confusion matrix
-  const updateMatrix = (matrix: ConfusionMatrix, prediction: string, decision: string) => {
-    if (prediction === 'Accept' && decision === 'Accept') matrix.truePositive++;
-    else if (prediction === 'Reject' && decision === 'Reject') matrix.trueNegative++;
-    else if (prediction === 'Accept' && decision === 'Reject') matrix.falsePositive++;
-    else if (prediction === 'Reject' && decision === 'Accept') matrix.falseNegative++;
-  };
-
-  // Calculate metrics from confusion matrix
-  const calculateMetrics = (matrix: ConfusionMatrix): Metrics => {
-    const total = matrix.truePositive + matrix.trueNegative + matrix.falsePositive + matrix.falseNegative;
-    const accuracy = total > 0 ? ((matrix.truePositive + matrix.trueNegative) / total * 100).toFixed(1) : '0.0';
-    const precision = (matrix.truePositive + matrix.falsePositive) > 0 ? 
-      (matrix.truePositive / (matrix.truePositive + matrix.falsePositive) * 100).toFixed(1) : '0.0';
-    const recall = (matrix.truePositive + matrix.falseNegative) > 0 ? 
-      (matrix.truePositive / (matrix.truePositive + matrix.falseNegative) * 100).toFixed(1) : '0.0';
-    const f1Score = (parseFloat(precision) + parseFloat(recall)) > 0 ? 
-      ((2 * parseFloat(precision) * parseFloat(recall)) / (parseFloat(precision) + parseFloat(recall))).toFixed(1) : '0.0';
+  // Find the metrics for the selected prompt and year
+  const currentPromptMetrics = useMemo(() => {
+    // Try to find exact match first
+    let found = allPromptsMetrics.find(metrics => 
+      metrics.prompt === selectedPrompt && metrics.year === selectedYear
+    );
     
-    return { accuracy, precision, recall, f1Score, total };
-  };
-
-  // Process papers and calculate errors and matrices
-  const { nonRebuttalErrors, rebuttalErrors, confusionMatrixData, predictionMismatches } = useMemo(() => {
-    const nonRebuttalErrorIds: string[] = [];
-    const rebuttalErrorIds: string[] = [];
-    const nonRebuttalMatrix: ConfusionMatrix = { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 };
-    const rebuttalMatrix: ConfusionMatrix = { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 };
-    const mismatches: ErrorDetail[] = [];
-
-    nonRebuttalPredictions.forEach(pred => {
-      const decision = pred.decision;
-      const nonRebuttalPrediction = nonRebuttalPredictionsMap.get(pred.paper_id);
-      
-      // Check non-rebuttal predictions
-      if (nonRebuttalPrediction) {
-        if (nonRebuttalPrediction !== decision) {
-          nonRebuttalErrorIds.push(pred.paper_id);
-        }
-        updateMatrix(nonRebuttalMatrix, nonRebuttalPrediction, decision);
+    // If no exact match, try to find by prompt type (fallback)
+    if (!found && allPromptsMetrics.length > 0) {
+      // Find the first prompt of type -1 (initial prompt type)
+      found = allPromptsMetrics.find(metrics => 
+        metrics.type === -1 && metrics.year === selectedYear
+      );
+      if (found) {
+        // Update the selected prompt to match what we found
+        setSelectedPrompt(found.prompt);
       }
-      
-    });
+    }
+    
+    return found;
+  }, [allPromptsMetrics, selectedPrompt, selectedYear]);
 
-    rebuttalPredictions.forEach(pred => {
-      const decision = pred.decision;
-      const rebuttalPrediction = rebuttalPredictionsMap.get(pred.paper_id);
-      
-      // Check rebuttal predictions
-      if (rebuttalPrediction) {
-        if (rebuttalPrediction !== decision) {
-          rebuttalErrorIds.push(pred.paper_id);
-        }
-        updateMatrix(rebuttalMatrix, rebuttalPrediction, decision);
-      }
-    });
+  // Get the appropriate confusion matrix and metrics based on rebuttal toggle
+  const { confusionMatrixData, nonRebuttalMetrics, rebuttalMetrics } = useMemo(() => {
+    if (!currentPromptMetrics) {
+      return {
+        confusionMatrixData: { 
+          nonRebuttal: { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 },
+          rebuttal: { truePositive: 0, trueNegative: 0, falsePositive: 0, falseNegative: 0 }
+        },
+        nonRebuttalMetrics: { accuracy: '0.0', precision: '0.0', recall: '0.0', f1Score: '0.0', total: 0 },
+        rebuttalMetrics: { accuracy: '0.0', precision: '0.0', recall: '0.0', f1Score: '0.0', total: 0 }
+      };
+    }
 
     return {
-      nonRebuttalErrors: nonRebuttalErrorIds,
-      rebuttalErrors: rebuttalErrorIds,
-      confusionMatrixData: { nonRebuttal: nonRebuttalMatrix, rebuttal: rebuttalMatrix },
-      predictionMismatches: mismatches
+      confusionMatrixData: {
+        nonRebuttal: currentPromptMetrics.nonRebuttalMatrix,
+        rebuttal: currentPromptMetrics.rebuttalMatrix
+      },
+      nonRebuttalMetrics: currentPromptMetrics.nonRebuttalMetrics,
+      rebuttalMetrics: currentPromptMetrics.rebuttalMetrics
     };
-  }, [rebuttalPredictionsMap, nonRebuttalPredictionsMap]);
-
-  const nonRebuttalMetrics = calculateMetrics(confusionMatrixData.nonRebuttal);
-  const rebuttalMetrics = calculateMetrics(confusionMatrixData.rebuttal);
+  }, [currentPromptMetrics]);
 
   // Confusion Matrix Component with consistent styling
   const ConfusionMatrixComponent = ({ matrix, title, metrics }: { matrix: ConfusionMatrix, title: string, metrics: Metrics }) => {
@@ -396,7 +231,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
   );
 
   // Loading state
-  if (isLoadingData || isLoadingPredictions) {
+  if (isLoading) {
     return (
       <div className="prediction-errors">
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
@@ -405,9 +240,26 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
               <span className="visually-hidden">Loading...</span>
             </div>
             <div className="mt-3 text-muted">
-              {isLoadingData ? 'Loading paper data...' : 'Loading predictions...'}
+              Loading prediction stats...
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="prediction-errors">
+        <div className="alert alert-danger" role="alert">
+          <strong>Error:</strong> {error}
+          <button 
+            className="btn btn-sm btn-outline-danger ms-3" 
+            onClick={clearErrorState}
+          >
+            Dismiss
+          </button>
         </div>
       </div>
     );
@@ -434,7 +286,7 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                   <YearDropdown
                     selectedYear={selectedYear}
                     onYearChange={handleYearChange}
-                    isLoading={isLoading}
+                    isLoading={isSettingYear}
                   />
                   <div className="d-flex align-items-center gap-1">
                     <PromptDropdown
@@ -475,16 +327,6 @@ const PredictionErrors: React.FC<PredictionErrorsProps> = ({
                 title={showRebuttal ? "Rebuttal" : "Non-Rebuttal"} 
                 metrics={showRebuttal ? rebuttalMetrics : nonRebuttalMetrics}
               />
-              {/* <div className="small text-danger" style={{ 
-                wordBreak: 'break-word',
-                // maxHeight: '100px',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical'
-              }}>
-              {selectedPrompt}
-              </div> */}
             </div>
           </div>
 

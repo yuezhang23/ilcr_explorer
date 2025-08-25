@@ -4,6 +4,7 @@ import iclrReducer from "../Reducers/iclrReducer"
 import pubDataReducer from "../Reducers/pubDataReducer"
 import predictionReducer from "../Reducers/predictionReducer"
 import promptTemplateReducer from "../Reducers/promptTemplateReducer"
+import predictionStatsReducer from "../Reducers/predictionStatsReducer"
 
 export interface ProjectState {
   userReducer: {
@@ -24,6 +25,12 @@ export interface ProjectState {
   promptTemplateReducer: {
     promptTemplates: any[]
   }
+  predictionStatsReducer: {
+    allPromptsMetrics: any[]
+    isLoading: boolean
+    error: string | null
+    currentYear: string
+  }
 }
 
 const store = configureStore({
@@ -33,6 +40,7 @@ const store = configureStore({
     pubDataReducer,
     predictionReducer,
     promptTemplateReducer,
+    predictionStatsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -47,4 +55,6 @@ const store = configureStore({
     }),
 });
 
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 export default store;
