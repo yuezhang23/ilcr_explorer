@@ -23,9 +23,6 @@
   "devDependencies": {
     "@craco/craco": "^7.1.0",
     "@react-google-maps/api": "^2.19.3",
-    "@testing-library/jest-dom": "^6.4.6",
-    "@testing-library/react": "^16.3.0",
-    "@types/jest": "^30.0.0",
     "@types/node": "^24.0.13",
     "@types/react": "^18.2.25",
     "@types/react-dom": "^18.2.25",
@@ -39,13 +36,11 @@
     "start:optimized": "node scripts/start-optimized.js",
     "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "build:production": "REACT_APP_ENVIRONMENT=production GENERATE_SOURCEMAP=false react-scripts build",
-    "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
-      "react-app",
-      "react-app/jest"
+      "react-app"
     ]
   },
   "browserslist": {

@@ -164,22 +164,7 @@ app.get('/ping', (req, res) => {
   });
 });
 
-// Test endpoint for domain verification
-app.get('/test-domain', (req, res) => {
-  const requestInfo = {
-    timestamp: new Date().toISOString(),
-    origin: req.get('Origin') || 'None',
-    host: req.get('Host') || 'None',
-    userAgent: req.get('User-Agent') || 'None',
-    referer: req.get('Referer') || 'None',
-    allowedOrigins: allowedOrigins,
-    corsEnabled: true,
-    environment: process.env.NODE_ENV || 'development'
-  };
-  
-  console.log('Domain test request:', requestInfo);
-  res.status(200).json(requestInfo);
-});
+
 
 // Database health check endpoint
 app.get('/health/db', async (req, res) => {
@@ -222,5 +207,5 @@ Public(app);
 Prompt(app);
 predictionStats(app);
 
-// Test(app);
+
 app.listen(process.env.PORT || 4000);
