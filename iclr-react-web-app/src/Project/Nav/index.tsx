@@ -46,12 +46,16 @@ function Nav() {
     };
   }, [openCollapse]);
 
-  const handleYearSelect = useCallback(async (year: string) => {
-    const success = await setYear(year);
-    if (success) {
-      setOpenCollapse(null);
-    }
-  }, [setYear]);
+    // Handle year selection change
+    const handleYearSelect = useCallback(async (year: string) => {
+      // Update global year context
+      try {
+          await setYear(year);
+          setOpenCollapse(null);
+      } catch (error) {
+          console.error('Failed to update global year:', error);
+      }
+  }, [currentYear, setYear]);
 
   const handleConferenceSelect = useCallback((conference: string) => {
     setSelectedConference(conference);
