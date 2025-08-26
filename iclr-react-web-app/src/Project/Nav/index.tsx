@@ -12,7 +12,7 @@ import "./collapseStyles.css";
 function Nav() {
   const { pathname } = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
-  const { currentYear, availableYears, setYear: setGlobalYear } = useYear();
+  const { currentYear, availableYears, setYear} = useYear();
   
   // Single state to track which collapse is open (only one can be open at a time)
   const [openCollapse, setOpenCollapse] = useState<string | null>(null);
@@ -47,11 +47,11 @@ function Nav() {
   }, [openCollapse]);
 
   const handleYearSelect = useCallback(async (year: string) => {
-    const success = await setGlobalYear(year);
+    const success = await setYear(year);
     if (success) {
       setOpenCollapse(null);
     }
-  }, [setGlobalYear]);
+  }, [setYear]);
 
   const handleConferenceSelect = useCallback((conference: string) => {
     setSelectedConference(conference);
