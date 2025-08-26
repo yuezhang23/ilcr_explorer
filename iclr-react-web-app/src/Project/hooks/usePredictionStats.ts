@@ -43,6 +43,22 @@ export const usePredictionStats = () => {
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)); // Sort descending
   }, [allPromptsMetrics]);
 
+  // Check if we have data for all available years
+  const hasAllData = useCallback(() => {
+    if (!allPromptsMetrics || allPromptsMetrics.length === 0) return false;
+    
+    // Check if we have data for multiple years (indicating comprehensive data)
+    const availableYears = getAvailableYears();
+    return availableYears.length > 1;
+  }, [allPromptsMetrics, getAvailableYears]);
+
+  // Check if we have data for a specific year
+  const hasDataForYear = useCallback((year: string) => {
+    if (!allPromptsMetrics || allPromptsMetrics.length === 0) return false;
+    
+    return allPromptsMetrics.some(metric => metric.year === year);
+  }, [allPromptsMetrics]);
+
   return {
     allPromptsMetrics,
     isLoading,
@@ -54,5 +70,7 @@ export const usePredictionStats = () => {
     changeYear,
     clearErrorState,
     getAvailableYears,
+    hasAllData,
+    hasDataForYear,
   };
 };

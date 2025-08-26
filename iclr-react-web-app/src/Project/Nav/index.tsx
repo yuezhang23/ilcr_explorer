@@ -12,11 +12,12 @@ import "./collapseStyles.css";
 function Nav() {
   const { pathname } = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
-  const { currentYear, availableYears, setYear} = useYear();
+  const { currentYear, availableYears, setYear, loading: yearLoading} = useYear();
   
   // Single state to track which collapse is open (only one can be open at a time)
   const [openCollapse, setOpenCollapse] = useState<string | null>(null);
   const [selectedConference, setSelectedConference] = useState<string>('ICLR');
+  const [isYearChanging, setIsYearChanging] = useState(false);
   
   const availableConferences = ['ICLR', 'NeurIPS', 'ICML', 'ACL'];
   const availableForms = ['Confusion Matrix', 'Dashboard'];
@@ -50,12 +51,15 @@ function Nav() {
     const handleYearSelect = useCallback(async (year: string) => {
       // Update global year context
       try {
+          setIsYearChanging(true);
           await setYear(year);
           setOpenCollapse(null);
       } catch (error) {
           console.error('Failed to update global year:', error);
+      } finally {
+          setIsYearChanging(false);
       }
-  }, [currentYear, setYear]);
+  }, [setYear]);
 
   const handleConferenceSelect = useCallback((conference: string) => {
     setSelectedConference(conference);
@@ -106,7 +110,11 @@ function Nav() {
               className="btn dropdown-toggle" 
               onClick={() => toggleCollapse('year-collapse')}
               style={navStyles.conferenceButton}
+              disabled={isYearChanging || yearLoading}
             >
+              {isYearChanging ? (
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              ) : null}
               {currentYear}
             </button>
             
@@ -121,8 +129,12 @@ function Nav() {
                     className="collapse-item"
                     onClick={() => handleYearSelect(year)}
                     style={currentYear === year ? navStyles.collapseItemActive : navStyles.collapseItem}
+                    disabled={isYearChanging}
                   >
                     {year}
+                    {isYearChanging && currentYear === year && (
+                      <span className="spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true"></span>
+                    )}
                   </button>
                 ))}
               </div>

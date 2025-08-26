@@ -536,7 +536,7 @@ function AdminHome() {
     const { currentIclrName } = useSelector((state: ProjectState) => state.iclrReducer);
     const { currentPreds } = useSelector((state: ProjectState) => state.predictionReducer);
     const dispatch = useDispatch();
-    const { currentYear } = useYear() ;
+    const { currentYear, loading: yearLoading } = useYear();
 
     // Consolidated state management
     const [state, setState] = useState({
@@ -598,7 +598,7 @@ function AdminHome() {
             console.error('Error fetching paginated data:', error.response?.data || error);
             setState(prev => ({ ...prev, isLoadingData: false }));
         }
-    }, [state.currentPage, state.searchTerm, dispatch, useYear()]);
+    }, [state.currentPage, state.searchTerm, dispatch, currentYear]);
 
     // Optimized predictions fetching
     const fetchPredictionsForCurrentPage = useCallback(async (papers: any[], prompt: string, rebuttal: boolean) => {
@@ -644,8 +644,26 @@ function AdminHome() {
 
     // Main data fetching effect
     useEffect(() => {
-        fetchPaginatedData();
-    }, [fetchPaginatedData]);
+        if (!yearLoading) {
+            fetchPaginatedData();
+        }
+    }, [fetchPaginatedData, yearLoading]);
+
+    // Reset to first page and clear UI state when year changes
+    useEffect(() => {
+        setState(prev => ({ 
+            ...prev, 
+            currentPage: 1, 
+            pageInput: '1',
+            searchTerm: '',
+            bib: [],
+            totalRecords: 0
+        }));
+        setUiState(prev => ({
+            expandedAbstracts: new Set(),
+            expandedAuthors: new Set()
+        }));
+    }, [currentYear]);
 
     // Predictions fetching effect
     useEffect(() => {
@@ -777,6 +795,12 @@ function AdminHome() {
                     </div> 
                     <div className='col-10 flex-grow-1 d-flex flex-column' style={{ overflow: 'hidden' }}>
                         <div className="d-flex mb-3 justify-content-center align-items-center gap-4">
+                            {yearLoading && (
+                                <div className="d-flex align-items-center text-primary">
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Changing to year {currentYear}...</span>
+                                </div>
+                            )}
                             <Pagination 
                                 currentPage={state.currentPage}
                                 totalPages={totalPages}
@@ -861,12 +885,12 @@ function AdminHome() {
                                         </td>
                                         </tr>
                                     )}
-                                    {state.isLoadingData && (
+                                    {(state.isLoadingData || yearLoading) && (
                                         <div className="text-center py-5" style={adminStyles.loadingState.container}>
                                             <div className="spinner-border text-primary" role="status">
                                                 <span className="visually-hidden">Loading...</span>
                                             </div>
-                                            <p>Loading papers...</p>
+                                            <p>{yearLoading ? 'Changing year...' : 'Loading papers...'}</p>
                                         </div>
                                     )}
                                     {!state.isLoadingData && processedBib.length === 0 && state.searchTerm && (
