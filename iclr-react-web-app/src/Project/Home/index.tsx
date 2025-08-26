@@ -11,7 +11,6 @@ import { useYear } from '../../contexts/YearContext';
 import { 
     adminStyles, 
     getRatingColor, 
-    getConfidenceColor, 
     getDecisionColors, 
     getPredictionColors, 
     getIndividualRatingColor, 
@@ -45,27 +44,31 @@ function processPapersData(data: any[]) {
         const ratings: number[] = [];
         const confidences: number[] = [];
 
+        // Single loop for better performance
         for (const o of metareviews) {
-            if (o.values?.rating) {
-                const ratingValue = parseFloat(o.values.rating);
-                if (!isNaN(ratingValue)) {
-                    ratings.push(ratingValue);
-                    totalRating += ratingValue;
-                    validRatings++;
+            const values = o.values;
+            if (values) {
+                if (values.rating) {
+                    const ratingValue = parseFloat(values.rating);
+                    if (!isNaN(ratingValue)) {
+                        ratings.push(ratingValue);
+                        totalRating += ratingValue;
+                        validRatings++;
+                    }
                 }
-            }
-            if (o.values?.confidence) {
-                const confidenceValue = parseFloat(o.values.confidence);
-                if (!isNaN(confidenceValue)) {
-                    confidences.push(confidenceValue);
-                    totalConfidence += confidenceValue;
-                    validConfidences++;
+                if (values.confidence) {
+                    const confidenceValue = parseFloat(values.confidence);
+                    if (!isNaN(confidenceValue)) {
+                        confidences.push(confidenceValue);
+                        totalConfidence += confidenceValue;
+                        validConfidences++;
+                    }
                 }
             }
         }
         
-        const rating = validRatings > 0 ? parseFloat((totalRating / validRatings).toFixed(2)) : 0;
-        const confidence = validConfidences > 0 ? parseFloat((totalConfidence / validConfidences).toFixed(2)) : 0;
+        const rating = validRatings > 0 ? Math.round((totalRating / validRatings) * 100) / 100 : 0;
+        const confidence = validConfidences > 0 ? Math.round((totalConfidence / validConfidences) * 100) / 100 : 0;
 
         return {
             ...bib,
@@ -319,6 +322,18 @@ const PaperRow = React.memo(({
     const predictionButtonStyle = useMemo(() => 
         ({ ...getPredictionColors(prediction), ...adminStyles.button.prediction }), [prediction]);
 
+    // Memoize author button styles
+    const authorButtonStyle = useMemo(() => ({
+        color: 'inherit',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: 'inherit',
+        fontWeight: 'inherit',
+        textAlign: 'center' as const,
+        width: '100%'
+    }), []);
+
     const handleRowMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         Object.assign(e.currentTarget.style, adminStyles.row.hover);
     }, []);
@@ -376,17 +391,16 @@ const PaperRow = React.memo(({
         toggleAuthors(index);
     }, [toggleAuthors, index]);
 
-    // Memoize author button styles
-    const authorButtonStyle = useMemo(() => ({
-        color: 'inherit',
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-        fontSize: 'inherit',
-        fontWeight: 'inherit',
-        textAlign: 'center' as const,
-        width: '100%'
-    }), []);
+    // Optimized mouse event handlers for author buttons
+    const handleAuthorMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.currentTarget.style.textDecoration = 'underline';
+        e.currentTarget.style.color = '#007bff';
+    }, []);
+
+    const handleAuthorMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.currentTarget.style.textDecoration = 'none';
+        e.currentTarget.style.color = 'inherit';
+    }, []);
 
     return (
         <div 
@@ -446,14 +460,8 @@ const PaperRow = React.memo(({
                                         onClick={() => handleAuthorClick(author)}
                                         className="btn btn-link p-0 text-decoration-none"
                                         style={authorButtonStyle}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.textDecoration = 'underline';
-                                            e.currentTarget.style.color = '#007bff';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.textDecoration = 'none';
-                                            e.currentTarget.style.color = 'inherit';
-                                        }}
+                                        onMouseEnter={handleAuthorMouseEnter}
+                                        onMouseLeave={handleAuthorMouseLeave}
                                     >
                                         {author}
                                     </button>
@@ -533,7 +541,7 @@ const PaperRow = React.memo(({
 
 // Main component with optimized state management and data fetching
 function AdminHome() {
-    const { currentIclrName } = useSelector((state: ProjectState) => state.iclrReducer);
+
     const { currentPreds } = useSelector((state: ProjectState) => state.predictionReducer);
     const dispatch = useDispatch();
     const { currentYear, loading: yearLoading } = useYear();
@@ -554,11 +562,7 @@ function AdminHome() {
         confirmationPrompt: '',
         user_rebuttal: false,
         pub_rebuttal: false,
-        showPrompt: false
-    });
-
-    // Separate state for UI interactions that don't affect data
-    const [uiState, setUiState] = useState({
+        showPrompt: false,
         expandedAbstracts: new Set<number>(),
         expandedAuthors: new Set<number>()
     });
@@ -629,10 +633,11 @@ function AdminHome() {
         
         searchTimeoutRef.current = setTimeout(() => {
             setState(prev => ({ ...prev, currentPage: 1 }));
-            setUiState(prev => ({
-                expandedAbstracts: new Set(),
-                expandedAuthors: new Set()
-            }));
+                    setState(prev => ({
+            ...prev,
+            expandedAbstracts: new Set(),
+            expandedAuthors: new Set()
+        }));
         }, 300);
 
         return () => {
@@ -659,7 +664,8 @@ function AdminHome() {
             bib: [],
             totalRecords: 0
         }));
-        setUiState(prev => ({
+        setState(prev => ({
+            ...prev,
             expandedAbstracts: new Set(),
             expandedAuthors: new Set()
         }));
@@ -672,10 +678,7 @@ function AdminHome() {
         }
     }, [state.bib, state.currentPrompt, state.pub_rebuttal, fetchPredictionsForCurrentPage]);
 
-    // Update page input when current page changes
-    useEffect(() => {
-        setState(prev => ({ ...prev, pageInput: state.currentPage.toString() }));
-    }, [state.currentPage]);
+
 
     // Optimized event handlers
     const handlePrompting = useCallback(async (url: string, id: string, rebuttal: number) => {
@@ -697,58 +700,64 @@ function AdminHome() {
 
     const goToNextPage = useCallback(() => {
         if (state.currentPage < totalPages) {
-            setState(prev => ({ ...prev, currentPage: state.currentPage + 1 }));
+            setState(prev => ({ ...prev, currentPage: prev.currentPage + 1 }));
         }
     }, [state.currentPage, totalPages]);
 
     const goToPreviousPage = useCallback(() => {
         if (state.currentPage > 1) {
-            setState(prev => ({ ...prev, currentPage: state.currentPage - 1 }));
+            setState(prev => ({ ...prev, currentPage: prev.currentPage - 1 }));
         }
     }, [state.currentPage]);
 
-    const setCurrentPage = useCallback((page: number) => {
-        setState(prev => ({ ...prev, currentPage: page }));
+    // Generic setter function to reduce code duplication
+    const setStateField = useCallback((field: string, value: any) => {
+        setState(prev => ({ ...prev, [field]: value }));
     }, []);
 
-    const setPageInput = useCallback((value: string) => {
-        setState(prev => ({ ...prev, pageInput: value }));
-    }, []);
+    // Specific setters for commonly used fields
+    const setCurrentPage = useCallback((page: number) => {
+        setStateField('currentPage', page);
+    }, [setStateField]);
 
     const setSearchTerm = useCallback((value: string) => {
-        setState(prev => ({ ...prev, searchTerm: value }));
-    }, []);
+        setStateField('searchTerm', value);
+    }, [setStateField]);
+
+    const setPageInput = useCallback((value: string) => {
+        setStateField('pageInput', value);
+    }, [setStateField]);
 
     const setCurrentPrompt = useCallback((value: string) => {
-        setState(prev => ({ ...prev, currentPrompt: value }));
-    }, []);
+        setStateField('currentPrompt', value);
+    }, [setStateField]);
 
     const setPubRebuttal = useCallback((value: boolean) => {
-        setState(prev => ({ ...prev, pub_rebuttal: value }));
-    }, []);
+        setStateField('pub_rebuttal', value);
+    }, [setStateField]);
 
     const setOpenModalPaper = useCallback((paper: any) => {
-        setState(prev => ({ ...prev, openModalPaper: paper }));
-    }, []);
+        setStateField('openModalPaper', paper);
+    }, [setStateField]);
 
     const setUserPrompt = useCallback((value: string) => {
-        setState(prev => ({ ...prev, userPrompt: value }));
-    }, []);
+        setStateField('userPrompt', value);
+    }, [setStateField]);
 
     const setShowConfirmationModal = useCallback((value: boolean) => {
-        setState(prev => ({ ...prev, showConfirmationModal: value }));
-    }, []);
+        setStateField('showConfirmationModal', value);
+    }, [setStateField]);
 
     const setConfirmationPrompt = useCallback((value: string) => {
-        setState(prev => ({ ...prev, confirmationPrompt: value }));
-    }, []);
+        setStateField('confirmationPrompt', value);
+    }, [setStateField]);
 
     const setUserRebuttal = useCallback((value: boolean) => {
-        setState(prev => ({ ...prev, user_rebuttal: value }));
-    }, []);
+        setStateField('user_rebuttal', value);
+    }, [setStateField]);
 
     const toggleAbstract = useCallback((index: number) => {
-        setUiState(prev => {
+        setState(prev => {
             const newExpanded = new Set(prev.expandedAbstracts);
             if (newExpanded.has(index)) {
                 newExpanded.delete(index);
@@ -760,7 +769,7 @@ function AdminHome() {
     }, []);
 
     const toggleAuthors = useCallback((index: number) => {
-        setUiState(prev => {
+        setState(prev => {
             const newExpanded = new Set(prev.expandedAuthors);
             if (newExpanded.has(index)) {
                 newExpanded.delete(index);
@@ -771,17 +780,7 @@ function AdminHome() {
         });
     }, []);
 
-    // Memoized prompt dropdown style
-    const promptDropdownStyle = useMemo(() => ({
-        color: 'white',
-        padding: '6px 12px',
-        fontSize: '0.9rem',
-        fontWeight: 500,
-        borderRadius: '16px',
-        transition: 'all 0.2s ease',
-        minWidth: '100px',
-        backgroundColor: "transparent"
-    }), []);
+
 
 
 
@@ -913,8 +912,8 @@ function AdminHome() {
                                             paper={br}
                                             index={index}
                                             predictionsMap={predictionsMap}
-                                            expandedAbstracts={uiState.expandedAbstracts}
-                                            expandedAuthors={uiState.expandedAuthors}
+                                            expandedAbstracts={state.expandedAbstracts}
+                                            expandedAuthors={state.expandedAuthors}
                                             toggleAbstract={toggleAbstract}
                                             toggleAuthors={toggleAuthors}
                                             setOpenModalPaper={setOpenModalPaper}
