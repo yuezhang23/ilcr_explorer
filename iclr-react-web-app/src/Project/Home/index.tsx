@@ -892,6 +892,7 @@ function AdminHome() {
                                 </div>
                                 <div className="card-body p-0 flex-grow-1" style={{ ...adminStyles.table.body, overflow: 'auto' }}>
                                 {state.showPrompt && (
+                                        <div><b>Current Prompt:</b> {home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)}
                                         <tr style={{ 
                                         backgroundColor: '#f8fafc',
                                         borderColor: '#e5e7eb'
@@ -907,6 +908,7 @@ function AdminHome() {
                                             </div>
                                         </td>
                                         </tr>
+                                        </div>
                                     )}
                                     {(state.isLoadingData || yearLoading || state.isYearChanging) && (
                                         <div className="text-center py-5" style={adminStyles.loadingState.container}>

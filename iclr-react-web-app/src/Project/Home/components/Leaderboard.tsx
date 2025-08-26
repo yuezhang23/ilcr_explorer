@@ -74,7 +74,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
         setIsLoading(true);
         setError(null);
         try {
+            console.log(`Fetching top papers for year: ${currentYear}`);
             const papers = await home.getPapersRankedByRating(20);
+            console.log(`Received ${papers.length} papers for year ${currentYear}`);
             setTopPapers(papers);
         } catch (err: any) {
             console.error('Error fetching top papers:', err);
@@ -85,8 +87,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
     }, [currentYear]);
 
     useEffect(() => {
+        console.log(`Year changed to: ${currentYear}, fetching new data...`);
         fetchTopPapers();
-    }, [fetchTopPapers]);
+    }, [currentYear]); // Direct dependency on currentYear instead of fetchTopPapers
 
     const handlePaperClick = useCallback((paperTitle: string, e: React.MouseEvent) => {
         e.preventDefault();
