@@ -10,20 +10,15 @@ dotenv.config();
 // Update this with your MongoDB connection string
 const CONNECTION_STRING = process.env.DB_CONNECTION_STRING;
 
-// Enhanced connection options to prevent timeouts
-const connectionOptions = {
+// Enhanced database connection with monitoring
+mongoose.connect(CONNECTION_STRING, {
     dbName: "iclr_2024",
-    serverSelectionTimeoutMS: 30000, // 30 seconds
-    socketTimeoutMS: 45000, // 45 seconds
-    connectTimeoutMS: 30000, // 30 seconds
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    connectTimeoutMS: 10000,
     maxPoolSize: 10,
-    minPoolSize: 1,
-    maxIdleTimeMS: 30000,
-    retryWrites: true,
-    w: 'majority'
-};
-
-mongoose.connect(CONNECTION_STRING, connectionOptions);
+    minPoolSize: 1
+  });
 
 const BATCH_SIZE = 100; // Reduced batch size to prevent timeouts
 
@@ -50,7 +45,7 @@ const candidates = [
 ] 
 
 // Name of the JSONL file to import
-const JSONL_FILE = './data/24_result_check_rebut.jsonl';
+const JSONL_FILE = './data/25_result_check.jsonl';
 
 // Connect to MongoDB
 async function main() {
@@ -72,31 +67,9 @@ async function main() {
 
             try {
                 // Define models
-                const Prediction = mongoose.model('predictions', predictionSchema);
-                const ICLR2024 = mongoose.model('iclr_2024', submissioSchema);
-
-                // // Delete all existing documents without prompt_type field, except those with prompt values in initial_prompts
-                // console.log('Deleting existing documents without prompt_type field (except those with initial_prompts)...');
-                
-                // // First, find documents that don't have prompt_type field
-                // const docsWithoutPromptType = await Prediction.find({ prompt_type: { $exists: false } });
-                // console.log(`Found ${docsWithoutPromptType.length} documents without prompt_type field`);
-                
-                // // Filter out documents where prompt is in initial_prompts
-                // const docsToDelete = docsWithoutPromptType.filter(doc => {
-                //     return !initial_prompts.includes(doc.prompt);
-                // });
-                
-                // console.log(`Found ${docsToDelete.length} documents to delete (excluding ${docsWithoutPromptType.length - docsToDelete.length} with initial_prompts)`);
-                
-                // Delete the filtered documents
-                // if (docsToDelete.length > 0) {
-                //     const docIdsToDelete = docsToDelete.map(doc => doc._id);
-                //     const deleteResult = await Prediction.deleteMany({ _id: { $in: docIdsToDelete } });
-                //     console.log(`Deleted ${deleteResult.deletedCount} existing documents without prompt_type field (excluding initial_prompts)`);
-                // } else {
-                //     console.log('No documents to delete');
-                // }
+                const Prediction = mongoose.model('prediction_2025', predictionSchema);
+                // const ICLR2024 = mongoose.model('iclr_2024', submissioSchema);
+                const ICLR2025 = mongoose.model('iclr_2025', submissioSchema);
 
                 // Read JSONL file line by line
                 const rl = readline.createInterface({
@@ -135,12 +108,11 @@ async function main() {
                         continue;
                     }
                     
-                    // Find paper in iclr_2024 with timeout handling
                     let paper;
                     try {
-                            paper = await ICLR2024.findOne({ s_id });
+                            paper = await ICLR2025.findOne({ s_id });
                         if (!paper) {
-                            console.error(`No iclr_2024 paper found for s_id: ${s_id}`);
+                            console.error(`No iclr_2025 paper found for s_id: ${s_id}`);
                             continue;
                         }
                     } catch (err) {
@@ -163,11 +135,33 @@ async function main() {
                         decision: paper.decision.toLowerCase() === 'no' || paper.decision.toLowerCase() === 'reject' ? 'Reject' : 'Accept',
                     };
 
+                    // // Check for existing duplicate records
+                    try {
+                        const existingRecords = await Prediction.find({
+                            paper_id: doc.paper_id,
+                            prompt: doc.prompt,
+                            model: doc.model,
+                            rebuttal: doc.rebuttal
+                        });
+                        
+                        if (existingRecords.length > 0) {
+                            console.log(`Removing ${existingRecords.length} existing duplicate record(s) for paper_id: ${doc.paper_id}, prompt: ${doc.prompt.substring(0, 50)}...`);
+                            await Prediction.deleteMany({
+                                paper_id: doc.paper_id,
+                                prompt: doc.prompt,
+                                model: doc.model
+                            });
+                        }
+                    } catch (err) {
+                        console.error(`Error checking for duplicates for paper_id ${doc.paper_id}:`, err.message);
+                        continue;
+                    }
+
                     console.log(`Processing record ${currentRecord}:`, doc);
                     batch.push(doc);
                     count++;
 
-                    // When batch is full, insert it
+                    // // When batch is full, insert it
                     if (batch.length >= BATCH_SIZE) {
                         try {
                             const result = await Prediction.insertMany(batch);

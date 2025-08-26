@@ -71,8 +71,8 @@ async function importPredictionStats() {
         const PredictionStats = mongoose.model('PredictionStats', predictionStatsSchema);
         
         // Clear existing data
-        await PredictionStats.deleteMany({});
-        console.log('Cleared existing prediction stats');
+        // await PredictionStats.deleteMany({});
+        // console.log('Cleared existing prediction stats');
         
         let importedCount = 0;
         

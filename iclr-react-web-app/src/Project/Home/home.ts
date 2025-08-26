@@ -1,6 +1,7 @@
 import axios from "axios";
 axios.defaults.withCredentials = true;
 
+declare const process: { env: { [key: string]: string | undefined } };
 
 export const BASE_API = process.env.REACT_APP_API_BASE || 'http://localhost:4000';
 export const ICLR_API = `${BASE_API}/api/iclr`;

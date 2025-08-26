@@ -250,7 +250,9 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
               </tr>
             </thead>
             <tbody>
-              {allPromptsMetrics.map((promptMetrics, index) => (
+              {[...allPromptsMetrics]
+                .sort((a, b) => ((home.PROMPT_CANDIDATES.indexOf(a.prompt) + home.PROMPT_CANDIDATES.length) % home.PROMPT_CANDIDATES.length) - ((home.PROMPT_CANDIDATES.indexOf(b.prompt) + home.PROMPT_CANDIDATES.length) % home.PROMPT_CANDIDATES.length))
+                .map((promptMetrics, index) => (
                 <React.Fragment key={`prompt-${index}`}>
                   {/* Non-Rebuttal Row */}
                   <tr key={`non-rebuttal-${index}`} style={{ 

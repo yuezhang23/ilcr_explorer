@@ -564,7 +564,7 @@ function AdminHome() {
     });
 
     const recordsPerPage = 20;
-    const searchTimeoutRef = useRef<NodeJS.Timeout>();
+    const searchTimeoutRef = useRef<NodeJS.Timeout | number>();
 
     // Memoized computations
     const processedBib = useMemo(() => processPapersData(state.bib), [state.bib]);
