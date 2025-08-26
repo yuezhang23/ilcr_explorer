@@ -25,9 +25,9 @@ export default function Project() {
           <Routes>
               <Route path="/" element={<Navigate to="Home" />} />
               <Route path="Home/*" element={<AdminHome/>} />
-              <Route path="Analytics/Distribution/*" element={<RatingHome/>} />
-              <Route path="Analytics/Dashboard/*" element={<PredictionDashboard/>} />
-              <Route path="Analytics/Table/*" element={<ComprehensiveMetricsTable/>} />
+              <Route path="Analytics/MetricsDistribution/*" element={<RatingHome/>} />
+              <Route path="Analytics/DashboardComparison/*" element={<PredictionDashboard/>} />
+              <Route path="Analytics/ConfusionMatrix/*" element={<ComprehensiveMetricsTable/>} />
               <Route path="Search" element={<Search />} />
               <Route path="User/Signin" element={<Signin />} />
               <Route path="User/Signup" element={<Signup />} />

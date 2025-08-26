@@ -20,7 +20,7 @@ function Nav() {
   const [selectedConference, setSelectedConference] = useState<string>('ICLR');
   
   const availableConferences = ['ICLR', 'NeurIPS', 'ICML', 'ACL'];
-  const availableForms = ['Distribution', 'Dashboard', 'Table'];
+  const availableForms = ['Confusion Matrix', 'Metrics Distribution', 'Dashboard Comparison'];
 
   const handleSignout = () => {
     logout();
@@ -160,7 +160,7 @@ function Nav() {
               onClick={() => toggleCollapse('analytics-collapse')}
               style={navStyles.conferenceButton}
             >
-              Analytics
+              Rebuttal Analytics
             </button>
             
             <Collapse in={openCollapse === 'analytics-collapse'}>
@@ -171,14 +171,14 @@ function Nav() {
               {availableForms.map((form: string) => (
                 <Link
                   key={form}
-                  to={`/Analytics/${form}`}
+                  to={`/Analytics/${form.replace(' ', '')}`}
                   className="collapse-item"
                   data-path={`Analytics/${form}`}
                   style={{
                     ...navStyles.collapseItem,
                     display: 'block',
                     textDecoration: 'none',
-                    outline: 'none'
+                    outline: 'none',
                   }}
                   onClick={() => handleAnalyticsLinkClick(form)}
                 >
