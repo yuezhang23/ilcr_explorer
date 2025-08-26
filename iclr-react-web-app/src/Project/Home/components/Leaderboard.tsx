@@ -50,7 +50,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
     const [topPapers, setTopPapers] = useState<Paper[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const { currentYear } = useYear();
+    const { currentYear, loading: yearLoading } = useYear();
 
     // Add CSS animation for gradient shift
     React.useEffect(() => {
@@ -71,8 +71,15 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
     }, []);
 
     const fetchTopPapers = useCallback(async () => {
+        if (!currentYear || yearLoading) {
+            console.log(`Leaderboard: Skipping fetch - year: ${currentYear}, yearLoading: ${yearLoading}`);
+            return;
+        }
+        
+        console.log(`Leaderboard: fetchTopPapers called for year: ${currentYear}`);
         setIsLoading(true);
         setError(null);
+        
         try {
             console.log(`Fetching top papers for year: ${currentYear}`);
             const papers = await home.getPapersRankedByRating(20);
@@ -84,12 +91,24 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentYear]);
+    }, [currentYear, yearLoading]);
 
     useEffect(() => {
-        console.log(`Year changed to: ${currentYear}, fetching new data...`);
-        fetchTopPapers();
-    }, [currentYear]); // Direct dependency on currentYear instead of fetchTopPapers
+        if (!currentYear || yearLoading) {
+            console.log(`Leaderboard: Skipping effect - year: ${currentYear}, yearLoading: ${yearLoading}`);
+            return;
+        }
+        
+        console.log(`Leaderboard: Year changed to: ${currentYear}, fetching new data...`);
+        // Clear existing data immediately when year changes for instant visual feedback
+        setTopPapers([]);
+        // Fetch immediately for fastest response, but with a small delay to prevent UI flicker
+        const timer = setTimeout(() => {
+            fetchTopPapers();
+        }, 10);
+        
+        return () => clearTimeout(timer);
+    }, [currentYear, yearLoading, fetchTopPapers]);
 
     const handlePaperClick = useCallback((paperTitle: string, e: React.MouseEvent) => {
         e.preventDefault();
@@ -131,7 +150,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
         return authors.slice(0, maxAuthors).join(', ') + ` +${authors.length - maxAuthors}`;
     };
 
-    if (isLoading) {
+    if (isLoading || yearLoading) {
         return (
             <div className="card border-0 shadow-lg h-100" style={{ 
                 borderRadius: '16px',
@@ -144,6 +163,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
                     <h5 className="mb-0 d-flex align-items-center">
                         <FaTrophy className="me-3" style={{ fontSize: '1.0rem', transform: 'rotate(-15deg)', color: '#FFD700' }} />
                         <span style={artisticTextStyle}>Top Rating</span>
+                        {yearLoading && (
+                            <span className="ms-2 badge bg-warning text-dark" style={{ fontSize: '0.7rem' }}>
+                                Changing year...
+                            </span>
+                        )}
                     </h5>
                 </div>
                 <div className="card-body d-flex align-items-center justify-content-center flex-grow-1" style={{ padding: '60px 20px' }}>
@@ -151,7 +175,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
                         <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
                             <span className="visually-hidden">Loading...</span>
                         </div>
-                        <p className="mt-3 text-muted fw-light">Loading leaderboard...</p>
+                        <p className="mt-3 text-muted fw-light">
+                            {yearLoading ? 'Changing year...' : 'Loading leaderboard...'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -203,6 +229,16 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ onPaperClick }) => {
                 <h5 className="mb-0 d-flex align-items-center">
                     <FaTrophy className="me-3" style={{ fontSize: '2.5rem', transform: 'rotate(-15deg)', color: '#FFD700' }} />
                     <span style={artisticTextStyle}>Top Ratings</span>
+                    {yearLoading && (
+                        <span className="ms-2 badge bg-warning text-dark" style={{ fontSize: '0.7rem' }}>
+                            Changing year...
+                        </span>
+                    )}
+                    {isLoading && !yearLoading && (
+                        <span className="ms-2 badge bg-info text-white" style={{ fontSize: '0.7rem' }}>
+                            Loading...
+                        </span>
+                    )}
                 </h5>
             </div>
             <div className="card-body p-0" style={{ overflow: 'auto', maxHeight: 'calc(800px - 85px)' }}>

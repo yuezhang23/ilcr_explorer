@@ -681,6 +681,7 @@ function AdminHome() {
 
     // Reset to first page and clear UI state when year changes - combined state update
     useEffect(() => {
+        console.log(`AdminHome: Year changed to ${currentYear}, resetting state...`);
         setState(prev => ({ 
             ...prev, 
             currentPage: 1, 
@@ -892,7 +893,7 @@ function AdminHome() {
                                 </div>
                                 <div className="card-body p-0 flex-grow-1" style={{ ...adminStyles.table.body, overflow: 'auto' }}>
                                 {state.showPrompt && (
-                                        <div><b>Current Prompt:</b> {home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)}
+                                        <div><b>Current Prompt:</b> {home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 0 ? "Basic" : home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 1 ? "Latest" : "Custom"}
                                         <tr style={{ 
                                         backgroundColor: '#f8fafc',
                                         borderColor: '#e5e7eb'
