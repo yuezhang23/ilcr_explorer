@@ -11,12 +11,9 @@ import { adminStyles } from './styles/adminStyles';
 import { ratingStyles } from './styles/ratingStyles';
 import './styles/admin.css';
 import RatingDistributionChart from './components/DistributionChart';
-import PredictionErrors from './components/PredictionErrors';
 import PromptCheckbox from './components/PromptCheckbox';
-import ConferenceCheckbox from './components/ConferenceCheckbox';
 import YearCheckbox from './components/YearCheckbox';
 import ConfirmationModal from './components/ConfirmationModal';
-import * as util from './utility';
 import PredictionMismatchTable from './components/PredictionMismatchTable';
 
 axios.defaults.withCredentials = true;

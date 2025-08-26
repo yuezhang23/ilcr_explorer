@@ -112,18 +112,21 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       }
     });
 
+    // Filter out bins with 0 paper count
+    const filteredBins = bins.filter(bin => bin.count > 0);
+
     // Calculate statistics
-    const totalPapersWithPredictions = bins.reduce((sum, bin) => sum + bin.count, 0);
-    const totalAccepts = bins.reduce((sum, bin) => sum + bin.acceptCount, 0);
-    const totalRejects = bins.reduce((sum, bin) => sum + bin.rejectCount, 0);
-    const totalTrueAccepts = bins.reduce((sum, bin) => sum + bin.trueAcceptCount, 0);
-    const totalTrueRejects = bins.reduce((sum, bin) => sum + bin.trueRejectCount, 0);
+    const totalPapersWithPredictions = filteredBins.reduce((sum, bin) => sum + bin.count, 0);
+    const totalAccepts = filteredBins.reduce((sum, bin) => sum + bin.acceptCount, 0);
+    const totalRejects = filteredBins.reduce((sum, bin) => sum + bin.rejectCount, 0);
+    const totalTrueAccepts = filteredBins.reduce((sum, bin) => sum + bin.trueAcceptCount, 0);
+    const totalTrueRejects = filteredBins.reduce((sum, bin) => sum + bin.trueRejectCount, 0);
     
     // Calculate rebuttal comparison statistics
-    const totalRebuttalAccepts = bins.reduce((sum, bin) => sum + bin.rebuttalAcceptCount, 0);
-    const totalRebuttalRejects = bins.reduce((sum, bin) => sum + bin.rebuttalRejectCount, 0);
-    const totalNonRebuttalAccepts = bins.reduce((sum, bin) => sum + bin.nonRebuttalAcceptCount, 0);
-    const totalNonRebuttalRejects = bins.reduce((sum, bin) => sum + bin.nonRebuttalRejectCount, 0);
+    const totalRebuttalAccepts = filteredBins.reduce((sum, bin) => sum + bin.rebuttalAcceptCount, 0);
+    const totalRebuttalRejects = filteredBins.reduce((sum, bin) => sum + bin.rebuttalRejectCount, 0);
+    const totalNonRebuttalAccepts = filteredBins.reduce((sum, bin) => sum + bin.nonRebuttalAcceptCount, 0);
+    const totalNonRebuttalRejects = filteredBins.reduce((sum, bin) => sum + bin.nonRebuttalRejectCount, 0);
     
     const validPapers = papers.filter(paper => {
       const field_value = paper[field];
@@ -132,7 +135,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     const avgField = validPapers.length > 0 ? validPapers.reduce((sum, paper) => sum + paper[field], 0) / validPapers.length : 0;
 
     // Log bin summary for debugging
-    console.log('Bin summary:', bins.map((bin, i) => ({
+    console.log('Bin summary:', filteredBins.map((bin, i) => ({
       range: `${bin.min}-${bin.max}`,
       total: bin.count,
       accept: bin.acceptCount,
@@ -142,7 +145,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     })));
 
     // Create separate labels for predictions and actual decisions
-    const labels = bins.map(bin => `${bin.min}-${bin.max}`);
+    const labels = filteredBins.map(bin => `${bin.min}-${bin.max}`);
 
     // For each bin, create data arrays for all prediction types
     const acceptPredData = [];
@@ -154,15 +157,15 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     const nonRebuttalAcceptData = [];
     const nonRebuttalRejectData = [];
     
-    for (let i = 0; i < bins.length; i++) {
-      acceptPredData.push(bins[i].acceptCount);
-      rejectPredData.push(bins[i].rejectCount);
-      acceptActualData.push(bins[i].trueAcceptCount);
-      rejectActualData.push(bins[i].trueRejectCount);
-      rebuttalAcceptData.push(bins[i].rebuttalAcceptCount);
-      rebuttalRejectData.push(bins[i].rebuttalRejectCount);
-      nonRebuttalAcceptData.push(bins[i].nonRebuttalAcceptCount);
-      nonRebuttalRejectData.push(bins[i].nonRebuttalRejectCount);
+    for (let i = 0; i < filteredBins.length; i++) {
+      acceptPredData.push(filteredBins[i].acceptCount);
+      rejectPredData.push(filteredBins[i].rejectCount);
+      acceptActualData.push(filteredBins[i].trueAcceptCount);
+      rejectActualData.push(filteredBins[i].trueRejectCount);
+      rebuttalAcceptData.push(filteredBins[i].rebuttalAcceptCount);
+      rebuttalRejectData.push(filteredBins[i].rebuttalRejectCount);
+      nonRebuttalAcceptData.push(filteredBins[i].nonRebuttalAcceptCount);
+      nonRebuttalRejectData.push(filteredBins[i].nonRebuttalRejectCount);
     }
 
     // Create datasets array - always show all cases
@@ -286,13 +289,16 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: {
-          usePointStyle: true,
-          padding: 20,
+              legend: {
+          position: 'top' as const,
+          labels: {
+            usePointStyle: true,
+            padding: 20,
+            font: {
+              size: 10,
+            },
+          },
         },
-      },
       title: {
         display: true,
         text: `${field.charAt(0).toUpperCase() + field.slice(1)} Distribution`,
@@ -302,76 +308,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
         },
       },
       tooltip: {
-        mode: 'index' as const,
-        intersect: false,
-        callbacks: {
-          title: function(context: any) {
-            const dataIndex = context[0].dataIndex;
-            return `${field.charAt(0).toUpperCase() + field.slice(1)} Range: ${chartData.labels[dataIndex]}`;
-          },
-          label: function(context: any) {
-            return context.dataset.label + ': ' + context.parsed.y;
-          },
-          afterBody: function(context: any) {
-            const dataIndex = context[0].dataIndex;
-            const lines = [];
-            
-            if (rebuttalPredictionsMap && nonRebuttalPredictionsMap) {
-              // Handle rebuttal comparison tooltip
-              const nonRebuttalAcceptCount = chartData.datasets[0].data[dataIndex];
-              const nonRebuttalRejectCount = chartData.datasets[1].data[dataIndex];
-              const rebuttalAcceptCount = chartData.datasets[2].data[dataIndex];
-              const rebuttalRejectCount = chartData.datasets[3].data[dataIndex];
-              const trueAcceptCount = chartData.datasets[4].data[dataIndex];
-              const trueRejectCount = chartData.datasets[5].data[dataIndex];
-              
-              const totalNonRebuttal = nonRebuttalAcceptCount + nonRebuttalRejectCount;
-              const totalRebuttal = rebuttalAcceptCount + rebuttalRejectCount;
-              const totalActual = trueAcceptCount + trueRejectCount;
-              
-              if (totalNonRebuttal > 0) {
-                const acceptPercent = ((nonRebuttalAcceptCount / totalNonRebuttal) * 100).toFixed(1);
-                const rejectPercent = ((nonRebuttalRejectCount / totalNonRebuttal) * 100).toFixed(1);
-                lines.push(`Non-Rebuttal - Accept: ${acceptPercent}%, Reject: ${rejectPercent}%`);
-              }
-              
-              if (totalRebuttal > 0) {
-                const acceptPercent = ((rebuttalAcceptCount / totalRebuttal) * 100).toFixed(1);
-                const rejectPercent = ((rebuttalRejectCount / totalRebuttal) * 100).toFixed(1);
-                lines.push(`Rebuttal - Accept: ${acceptPercent}%, Reject: ${rejectPercent}%`);
-              }
-              
-              if (totalActual > 0) {
-                const trueAcceptPercent = ((trueAcceptCount / totalActual) * 100).toFixed(1);
-                const trueRejectPercent = ((trueRejectCount / totalActual) * 100).toFixed(1);
-                lines.push(`Actual - Accept: ${trueAcceptPercent}%, Reject: ${trueRejectPercent}%`);
-              }
-            } else {
-              // Handle regular tooltip
-              const acceptCount = chartData.datasets[0].data[dataIndex];
-              const rejectCount = chartData.datasets[1].data[dataIndex];
-              const trueAcceptCount = chartData.datasets[2].data[dataIndex];
-              const trueRejectCount = chartData.datasets[3].data[dataIndex];
-              
-              const totalPredictions = acceptCount + rejectCount;
-              const totalActual = trueAcceptCount + trueRejectCount;
-              
-              if (totalPredictions > 0) {
-                const acceptPercent = ((acceptCount / totalPredictions) * 100).toFixed(1);
-                const rejectPercent = ((rejectCount / totalPredictions) * 100).toFixed(1);
-                lines.push(`Predictions - Accept: ${acceptPercent}%, Reject: ${rejectPercent}%`);
-              }
-              
-              if (totalActual > 0) {
-                const trueAcceptPercent = ((trueAcceptCount / totalActual) * 100).toFixed(1);
-                const trueRejectPercent = ((trueRejectCount / totalActual) * 100).toFixed(1);
-                lines.push(`Actual - Accept: ${trueAcceptPercent}%, Reject: ${trueRejectPercent}%`);
-              }
-            }
-            
-            return lines;
-          }
-        }
+        enabled: false,
       },
     },
     scales: {
@@ -432,9 +369,115 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
         </div>
       </div>
       
-      <div style={{ height: '400px', width: '100%' }}>
+      <div style={{ height: '450px', width: '100%' }}>
         <Bar data={chartData} options={options} />
       </div>
+
+      {/* Rating Distribution Table - Transposed */}
+      <div className="mt-0">
+        <div className="table-responsive">
+          <table className="table table-sm table-bordered" style={{ fontSize: '0.75rem' }}>
+            <thead className="table-light">
+              <tr>
+                <th className="text-center align-middle">
+                  Category
+                </th>
+                {chartData.labels.map((label) => (
+                  <th key={label} className="text-center" style={{ minWidth: '60px' }}>
+                    {label}
+                  </th>
+                ))}
+                <th className="text-center align-middle">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Non-Rebuttal Predictions Row */}
+              <tr>
+                <td className="fw-bold text-success">Pred Accept % - Non-Rebuttal</td>
+                {chartData.labels.map((label, index) => {
+                  const nonRebuttalAccept = chartData.datasets[0].data[index];
+                  const nonRebuttalReject = chartData.datasets[1].data[index];
+                  const total = nonRebuttalAccept + nonRebuttalReject;
+                  const rate = total > 0 ? ((nonRebuttalAccept / total) * 100).toFixed(1) : '0.0';
+                  return (
+                    <td key={label} className="text-center text-success">
+                      {total > 0 ? `${rate}%` : '-'}
+                    </td>
+                  );
+                })}
+                <td className="text-center fw-bold text-success">
+                  {chartData.stats.totalNonRebuttalAccepts + chartData.stats.totalNonRebuttalRejects > 0 
+                    ? `${((chartData.stats.totalNonRebuttalAccepts / (chartData.stats.totalNonRebuttalAccepts + chartData.stats.totalNonRebuttalRejects)) * 100).toFixed(1)}%`
+                    : '-'}
+                </td>
+              </tr>
+              
+              {/* Rebuttal Predictions Row */}
+              <tr>
+                <td className="fw-bold text-success">Pred Accept % - Rebuttal</td>
+                {chartData.labels.map((label, index) => {
+                  const rebuttalAccept = chartData.datasets[2].data[index];
+                  const rebuttalReject = chartData.datasets[3].data[index];
+                  const total = rebuttalAccept + rebuttalReject;
+                  const rate = total > 0 ? ((rebuttalAccept / total) * 100).toFixed(1) : '0.0';
+                  return (
+                    <td key={label} className="text-center text-success">
+                      {total > 0 ? `${rate}%` : '-'}
+                    </td>
+                  );
+                })}
+                <td className="text-center fw-bold text-success">
+                  {chartData.stats.totalRebuttalAccepts + chartData.stats.totalRebuttalRejects > 0 
+                    ? `${((chartData.stats.totalRebuttalAccepts / (chartData.stats.totalRebuttalAccepts + chartData.stats.totalRebuttalRejects)) * 100).toFixed(1)}%`
+                    : '-'}
+                </td>
+              </tr>
+              
+              {/* Actual Decisions Row */}
+              <tr>
+                <td className="fw-bold text-success">Actual Accept %</td>
+                {chartData.labels.map((label, index) => {
+                  const actualAccept = chartData.datasets[4].data[index];
+                  const actualReject = chartData.datasets[5].data[index];
+                  const total = actualAccept + actualReject;
+                  const rate = total > 0 ? ((actualAccept / total) * 100).toFixed(1) : '0.0';
+                  return (
+                    <td key={label} className="text-center text-success">
+                      {total > 0 ? `${rate}%` : '-'}
+                    </td>
+                  );
+                })}
+                <td className="text-center fw-bold text-success">
+                  {chartData.stats.totalTrueAccepts + chartData.stats.totalTrueRejects > 0 
+                    ? `${((chartData.stats.totalTrueAccepts / (chartData.stats.totalTrueAccepts + chartData.stats.totalTrueRejects)) * 100).toFixed(1)}%`
+                    : '-'}
+                </td>
+              </tr>
+              
+              {/* Paper Count Row */}
+              <tr className="table-light">
+                <td className="fw-bold">Paper Count</td>
+                {chartData.labels.map((label, index) => {
+                  const nonRebuttalAccept = chartData.datasets[0].data[index];
+                  const nonRebuttalReject = chartData.datasets[1].data[index];
+                  const rebuttalAccept = chartData.datasets[2].data[index];
+                  const rebuttalReject = chartData.datasets[3].data[index];
+                  const total = nonRebuttalAccept + nonRebuttalReject + rebuttalAccept + rebuttalReject;
+                  return (
+                    <td key={label} className="text-center fw-bold">
+                      {total > 0 ? total : '-'}
+                    </td>
+                  );
+                })}
+                <td className="text-center fw-bold">{chartData.stats.totalPapers}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div className="mt-4 d-flex justify-content-center gap-5">
         <div className="text-center">
           <div className="fw-bold text-primary">{chartData.stats.totalPapers}</div>
