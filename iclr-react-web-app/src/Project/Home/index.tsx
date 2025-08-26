@@ -540,6 +540,11 @@ const PaperRow = React.memo(({
 
 
 // Main component with optimized state management and data fetching
+// Optimization Strategy:
+// 1. Parallel data fetching - start fetching immediately when year changes
+// 2. Combined state updates - reduce re-renders by batching state changes
+// 3. Skip debouncing for year changes - immediate UI response
+// 4. Optimistic loading states - show feedback before data arrives
 function AdminHome() {
 
     const { currentPreds } = useSelector((state: ProjectState) => state.predictionReducer);
@@ -564,7 +569,8 @@ function AdminHome() {
         pub_rebuttal: false,
         showPrompt: false,
         expandedAbstracts: new Set<number>(),
-        expandedAuthors: new Set<number>()
+        expandedAuthors: new Set<number>(),
+        isYearChanging: false
     });
 
     const recordsPerPage = 20;
@@ -594,13 +600,14 @@ function AdminHome() {
                 ...prev,
                 bib: result.data,
                 totalRecords: result.totalCount,
-                isLoadingData: false
+                isLoadingData: false,
+                isYearChanging: false
             }));
             dispatch(setIclr(result.data));
             dispatch(setIclrName(result.name));
         } catch (error: any) {
             console.error('Error fetching paginated data:', error.response?.data || error);
-            setState(prev => ({ ...prev, isLoadingData: false }));
+            setState(prev => ({ ...prev, isLoadingData: false, isYearChanging: false }));
         }
     }, [state.currentPage, state.searchTerm, dispatch, currentYear]);
 
@@ -625,20 +632,30 @@ function AdminHome() {
         }
     }, [dispatch]);
 
-    // Debounced search effect
+    // Debounced search effect with optimization for year changes
     useEffect(() => {
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
         
-        searchTimeoutRef.current = setTimeout(() => {
-            setState(prev => ({ ...prev, currentPage: 1 }));
-                    setState(prev => ({
-            ...prev,
-            expandedAbstracts: new Set(),
-            expandedAuthors: new Set()
-        }));
-        }, 300);
+        // Skip debounce if search term is empty (during year change)
+        if (state.searchTerm === '') {
+            setState(prev => ({ 
+                ...prev, 
+                currentPage: 1,
+                expandedAbstracts: new Set(),
+                expandedAuthors: new Set()
+            }));
+        } else {
+            searchTimeoutRef.current = setTimeout(() => {
+                setState(prev => ({ 
+                    ...prev, 
+                    currentPage: 1,
+                    expandedAbstracts: new Set(),
+                    expandedAuthors: new Set()
+                }));
+            }, 300);
+        }
 
         return () => {
             if (searchTimeoutRef.current) {
@@ -647,14 +664,22 @@ function AdminHome() {
         };
     }, [state.searchTerm]);
 
-    // Main data fetching effect
+    // Main data fetching effect - start immediately when year changes
     useEffect(() => {
-        if (!yearLoading) {
+        if (currentYear) {
             fetchPaginatedData();
         }
-    }, [fetchPaginatedData, yearLoading]);
+    }, [currentYear, fetchPaginatedData]);
 
-    // Reset to first page and clear UI state when year changes
+    // Secondary effect for year loading state
+    useEffect(() => {
+        if (!yearLoading && currentYear && state.bib.length === 0) {
+            // Only fetch if we don't have data yet
+            fetchPaginatedData();
+        }
+    }, [yearLoading, currentYear, state.bib.length, fetchPaginatedData]);
+
+    // Reset to first page and clear UI state when year changes - combined state update
     useEffect(() => {
         setState(prev => ({ 
             ...prev, 
@@ -662,18 +687,17 @@ function AdminHome() {
             pageInput: '1',
             searchTerm: '',
             bib: [],
-            totalRecords: 0
-        }));
-        setState(prev => ({
-            ...prev,
+            totalRecords: 0,
             expandedAbstracts: new Set(),
-            expandedAuthors: new Set()
+            expandedAuthors: new Set(),
+            isYearChanging: true
         }));
     }, [currentYear]);
 
-    // Predictions fetching effect
+    // Predictions fetching effect - run in parallel with data fetching
     useEffect(() => {
         if (state.bib.length > 0) {
+            // Fetch predictions immediately when data is available
             fetchPredictionsForCurrentPage(state.bib, state.currentPrompt, state.pub_rebuttal);
         }
     }, [state.bib, state.currentPrompt, state.pub_rebuttal, fetchPredictionsForCurrentPage]);
@@ -794,7 +818,7 @@ function AdminHome() {
                     </div> 
                     <div className='col-10 flex-grow-1 d-flex flex-column' style={{ overflow: 'hidden' }}>
                         <div className="d-flex mb-3 justify-content-center align-items-center gap-4">
-                            {yearLoading && (
+                            {(yearLoading || state.isYearChanging) && (
                                 <div className="d-flex align-items-center text-primary">
                                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                                     <span>Changing to year {currentYear}...</span>
@@ -884,12 +908,12 @@ function AdminHome() {
                                         </td>
                                         </tr>
                                     )}
-                                    {(state.isLoadingData || yearLoading) && (
+                                    {(state.isLoadingData || yearLoading || state.isYearChanging) && (
                                         <div className="text-center py-5" style={adminStyles.loadingState.container}>
                                             <div className="spinner-border text-primary" role="status">
                                                 <span className="visually-hidden">Loading...</span>
                                             </div>
-                                            <p>{yearLoading ? 'Changing year...' : 'Loading papers...'}</p>
+                                            <p>{state.isYearChanging ? 'Changing year...' : yearLoading ? 'Loading year...' : 'Loading papers...'}</p>
                                         </div>
                                     )}
                                     {!state.isLoadingData && processedBib.length === 0 && state.searchTerm && (
