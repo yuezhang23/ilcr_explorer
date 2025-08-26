@@ -821,7 +821,7 @@ function AdminHome() {
                             {(yearLoading || state.isYearChanging) && (
                                 <div className="d-flex align-items-center text-primary">
                                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    <span>Changing to year {currentYear}...</span>
+                                    <span>...</span>
                                 </div>
                             )}
                             <Pagination 
