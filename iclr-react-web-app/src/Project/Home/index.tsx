@@ -530,6 +530,7 @@ const PaperRow = React.memo(({
     );
 });
 
+
 // Main component with optimized state management and data fetching
 function AdminHome() {
     const { currentIclrName } = useSelector((state: ProjectState) => state.iclrReducer);
@@ -552,7 +553,8 @@ function AdminHome() {
         showConfirmationModal: false,
         confirmationPrompt: '',
         user_rebuttal: false,
-        pub_rebuttal: false
+        pub_rebuttal: false,
+        showPrompt: false
     });
 
     // Separate state for UI interactions that don't affect data
@@ -763,6 +765,8 @@ function AdminHome() {
         backgroundColor: "transparent"
     }), []);
 
+
+
     return (
         <div style={adminStyles.container}>
             <div className='py-2 d-flex justify-content-center'> 
@@ -813,18 +817,49 @@ function AdminHome() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="d-flex justify-content-end mt-2 me-5" style={{
+                                <div className="d-flex justify-content-end mt-4 me-5" style={{
                                     borderBottom: '1px solid #e9ecef',
                                     backgroundColor: '#ffffff',
                                     borderBottomLeftRadius: '8px',
                                     borderBottomRightRadius: '8px'
                                 }}>
+                                    <button 
+                                    onClick={() => setState(prev => ({ ...prev, showPrompt: !prev.showPrompt }))}
+                                    className="btn btn-sm rounded-pill p-0 me-3 mb-3"
+                                    >
+                                    {state.showPrompt ? (
+                                        <>
+                                        <span><FaEyeSlash /></span>
+                                        </>
+                                    ) : (
+                                        <>
+                                        <span><FaEye /></span> 
+                                        </>
+                                    )}
+                                    </button>
                                     <RebuttalToggle
                                         checked={state.pub_rebuttal}
                                         onChange={setPubRebuttal}
                                     />
                                 </div>
                                 <div className="card-body p-0 flex-grow-1" style={{ ...adminStyles.table.body, overflow: 'auto' }}>
+                                {state.showPrompt && (
+                                        <tr style={{ 
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#e5e7eb'
+                                        }}>
+                                        <td colSpan={10} className="p-3" style={{ 
+                                            borderColor: '#e5e7eb',
+                                            color: '#374151',
+                                            fontSize: '0.8rem',
+                                            lineHeight: '1.3'
+                                        }}>
+                                            <div className="bg-light p-3 rounded" >
+                                            {state.currentPrompt}
+                                            </div>
+                                        </td>
+                                        </tr>
+                                    )}
                                     {state.isLoadingData && (
                                         <div className="text-center py-5" style={adminStyles.loadingState.container}>
                                             <div className="spinner-border text-primary" role="status">

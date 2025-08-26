@@ -394,12 +394,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                         lineHeight: '1.3'
                       }}>
                         {/* <div className="fw-bold mb-2">Prompt Content:</div> */}
-                        <div className="bg-light p-3 rounded" style={{ 
-                          // // backgroundColor: '#f1f5f9',
-                          // border: '1px solid #e2e8f0',
-                          // whiteSpace: 'pre-wrap',
-                          // fontFamily: 'monospace'
-                        }}>
+                        <div className="bg-light p-3 rounded" >
                           {promptMetrics.prompt}
                         </div>
                       </td>
