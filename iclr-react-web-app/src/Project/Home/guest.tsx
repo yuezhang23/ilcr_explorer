@@ -1,232 +1,994 @@
-// import React, { useEffect, useState } from 'react';
-// import * as home from './home';
-// import * as service from '../Details/service';
-// import {FaComment, FaEarlybirds, FaHeart, FaPeopleArrows, FaSmile} from "react-icons/fa";
-// import { useDispatch, useSelector } from 'react-redux';
-// import { ProjectState } from '../store';
-// import * as client from "../User/client";
-// import {setIclr } from '../Reducers/iclrReducer'
-// import axios from "axios";
-// import { Link, useNavigate } from 'react-router-dom';
-// axios.defaults.withCredentials = true;
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { ProjectState } from '../store';
+import * as home from './home';
+import * as util from './utility';
+import axios from "axios";
+import { FaChevronDown, FaChevronUp, FaEye, FaEyeSlash } from 'react-icons/fa6';
+import { setIclr, setIclrName } from '../Reducers/iclrReducer';
+import { updatePrediction, setCurrentPreds } from '../Reducers/predictionReducer';
+import { useYear } from '../../contexts/YearContext';
+import { 
+    adminStyles, 
+    getRatingColor, 
+    getDecisionColors, 
+    getPredictionColors, 
+    getIndividualRatingColor, 
+    getRowBackground, 
+    getPaginationButtonStyle,
+} from './styles/adminStyles';
+import './styles/admin.css';
+import PromptDropdown from './components/PromptDropdown';
+import RebuttalToggle from './components/RebuttalToggle';
+import PromptInputModal from './components/PromptInputModal';
+import ConfirmationModal from './components/ConfirmationModal';
 
-export {};
+axios.defaults.withCredentials = true;
 
-
-// function GuestHome() {
-//   const {currentUser} = useSelector((state: ProjectState) => state.userReducer)
-//   const {currentIclr} = useSelector((state: ProjectState) => state.iclrReducer)
-//   const [iclr, setIclr] = useState({ _id: "", name : ""});
-//   const [limitedIclr, setLimits] = useState<any[]>([]);
-//   const [page, setPage] = useState(-1)
-//   const dispatch = useDispatch();
-//   const [users, setUsers] = useState<any[]>([]);
-//   const navigate = useNavigate()
-//   const [likeCount, setLikeCount] = useState(0)
+// Optimized helper function with early returns and reduced iterations
+function processPapersData(data: any[]) {
+    if (!data || data.length === 0) return [];
     
-//     const fetchUsers = async () => {
-//       try {
-//         const users = await client.findAllUsers();
-//         setUsers(users);
-//       } catch (error: any) {
-//         console.error(error.response.data);
-//       }
-//     };
-  
-//     useEffect(() => {
-//       fetchUsers();
-//       setPage(0)
-//     }, []);
-  
-//     const updateLikes = async (userId : string, paperId : string) =>{
-//       if (!currentUser) {
-//         alert('You are not authorized, please Sign In/Up!')
-//         return
-//       } 
-//       const count = await home.toggleLike(paperId, currentUser._id);
-//       setLikeCount(count)
-//       alert(`hey, ${currentUser.username} just liked!`)
-//     }
+    return data.map((m: any) => {
+        const { metareviews, ...bib } = m;
+        
+        if (!metareviews || metareviews.length === 0) {
+            return { ...bib, rating: 0, confidence: 0, ratings: [], confidences: [] };
+        }
+
+        let totalRating = 0;
+        let totalConfidence = 0;
+        let validRatings = 0;
+        let validConfidences = 0;
+        const ratings: number[] = [];
+        const confidences: number[] = [];
+
+        // Single loop for better performance
+        for (const o of metareviews) {
+            const values = o.values;
+            if (values) {
+                if (values.rating) {
+                    const ratingValue = parseFloat(values.rating);
+                    if (!isNaN(ratingValue)) {
+                        ratings.push(ratingValue);
+                        totalRating += ratingValue;
+                        validRatings++;
+                    }
+                }
+                if (values.confidence) {
+                    const confidenceValue = parseFloat(values.confidence);
+                    if (!isNaN(confidenceValue)) {
+                        confidences.push(confidenceValue);
+                        totalConfidence += confidenceValue;
+                        validConfidences++;
+                    }
+                }
+            }
+        }
+        
+        const rating = validRatings > 0 ? Math.round((totalRating / validRatings) * 100) / 100 : 0;
+        const confidence = validConfidences > 0 ? Math.round((totalConfidence / validConfidences) * 100) / 100 : 0;
+
+        return {
+            ...bib,
+            rating,
+            confidence,
+            ratings,
+            confidences
+        };
+    });
+}
+
+// Optimized Pagination Component with reduced re-renders
+const Pagination = React.memo(({ 
+    currentPage, 
+    totalPages, 
+    totalRecords, 
+    pageInput, 
+    setPageInput, 
+    goToNextPage, 
+    goToPreviousPage, 
+    setCurrentPage,
+    searchTerm,
+    setSearchTerm
+}: {
+    currentPage: number;
+    totalPages: number;
+    totalRecords: number;
+    pageInput: string;
+    setPageInput: (value: string) => void;
+    goToNextPage: () => void;
+    goToPreviousPage: () => void;
+    setCurrentPage: (page: number) => void;
+    searchTerm: string;
+    setSearchTerm: (value: string) => void;
+}) => {
+    const clearButtonStyle = useMemo(() => ({
+        borderRadius: '8px',
+        padding: '6px 12px',
+        color: '#dc2626',
+        backgroundColor: '#fecaca',
+        fontWeight: 600,
+        cursor: 'pointer',
+        transition: 'all 0.22s cubic-bezier(.4,0,.2,1)',
+        boxShadow: '0 2px 4px rgba(220, 38, 38, 0.1)',
+        fontSize: '0.9rem',
+        minWidth: '80px',
+        border: 'none'
+    }), []);
+
+    const handlePageInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setPageInput(e.target.value);
+    }, [setPageInput]);
+
+    const handlePageInputBlur = useCallback(() => {
+        const pageNum = Math.max(1, Math.min(parseInt(pageInput, 10) || 1, totalPages));
+        setCurrentPage(pageNum);
+    }, [pageInput, totalPages, setCurrentPage]);
+
+    const handlePageInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            const pageNum = Math.max(1, Math.min(parseInt(pageInput, 10) || 1, totalPages));
+            setCurrentPage(pageNum);
+        }
+    }, [pageInput, totalPages, setCurrentPage]);
+
+    const handleClearSearch = useCallback(() => {
+        setSearchTerm('');
+    }, [setSearchTerm]);
+
+    const handlePreviousMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (currentPage !== 1) {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+        }
+    }, [currentPage]);
+
+    const handlePreviousMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (currentPage !== 1) {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'translateY(0)';
+        }
+    }, [currentPage]);
+
+    const handleNextMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (currentPage !== totalPages) {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+        }
+    }, [currentPage, totalPages]);
+
+    const handleNextMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (currentPage !== totalPages) {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            e.currentTarget.style.transform = 'translateY(0)';
+        }
+    }, [currentPage, totalPages]);
+
+    const handleClearMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.currentTarget.style.backgroundColor = '#fca5a5';
+        e.currentTarget.style.color = '#b91c1c';
+        e.currentTarget.style.boxShadow = '0 4px 8px rgba(220, 38, 38, 0.2)';
+    }, []);
+
+    const handleClearMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.currentTarget.style.backgroundColor = '#fecaca';
+        e.currentTarget.style.color = '#dc2626';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 2px 4px rgba(220, 38, 38, 0.1)';
+    }, []);
+
+    return (
+        <div className="d-flex align-items-center">
+            {searchTerm && (
+                <button 
+                    onClick={handleClearSearch}
+                    className="btn me-3 rounded-pill"
+                    style={clearButtonStyle}
+                    onMouseEnter={handleClearMouseEnter}
+                    onMouseLeave={handleClearMouseLeave}
+                >
+                    Clear
+                </button>
+            )}
+            {totalRecords > 0 && (
+                <>
+                    <button 
+                        onClick={goToNextPage} 
+                        disabled={currentPage === 1}
+                        className="btn me-3 rounded-pill"
+                        style={getPaginationButtonStyle(currentPage === 1)}
+                        onMouseEnter={handlePreviousMouseEnter}
+                        onMouseLeave={handlePreviousMouseLeave}
+                    >
+                        ← Previous
+                    </button>
+                    <div className="text-black text-center" style={adminStyles.pagination.pageInfo}>
+                        <div className="fw-bold">
+                            Page 
+                            <input
+                                type="number"
+                                min={1}
+                                max={totalPages}
+                                value={pageInput}
+                                onChange={handlePageInputChange}
+                                onBlur={handlePageInputBlur}
+                                onKeyDown={handlePageInputKeyDown}
+                                style={adminStyles.pagination.pageInput}
+                            />
+                            of {totalPages}
+                        </div>
+                        <div style={adminStyles.pagination.totalRecords}>
+                            {totalRecords} total records
+                        </div>
+                    </div>
+                    <button 
+                        onClick={goToNextPage} 
+                        disabled={currentPage === totalPages}
+                        className="btn ms-3 rounded-pill"
+                        style={getPaginationButtonStyle(currentPage === totalPages)}
+                        onMouseEnter={handleNextMouseEnter}
+                        onMouseLeave={handleNextMouseLeave}
+                    >
+                        Next →
+                    </button>
+                </>
+            )}
+        </div>
+    );
+});
+
+// Optimized Search Component
+const SearchBar = React.memo(({ 
+    searchTerm, 
+    setSearchTerm 
+}: {
+    searchTerm: string;
+    setSearchTerm: (value: string) => void;
+}) => {
+    const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+    }, [setSearchTerm]);
+
+    const handleSearchFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+        Object.assign(e.target.style, adminStyles.search.inputFocused);
+    }, []);
+
+    const handleSearchBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+        Object.assign(e.target.style, adminStyles.search.inputBlurred);
+    }, []);
+
+    return (
+        <div className="d-flex flex-column">
+            <div className="d-flex align-items-center">
+                <div className="position-relative">
+                    <i className="fas fa-search position-absolute" 
+                       style={adminStyles.search.icon}></i>
+                    <input
+                        type="text"
+                        placeholder="Search papers by title, author, or abstract..."
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        className="form-control rounded-pill"
+                        style={adminStyles.search.input}
+                        onFocus={handleSearchFocus}
+                        onBlur={handleSearchBlur}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+});
+
+// Optimized Paper Row Component with better memoization
+const PaperRow = React.memo(({ 
+    paper, 
+    index, 
+    predictionsMap, 
+    expandedAbstracts, 
+    expandedAuthors, 
+    toggleAbstract, 
+    toggleAuthors, 
+    setOpenModalPaper, 
+    setSearchTerm,
+    currentPrompt 
+}: {
+    paper: any;
+    index: number;
+    predictionsMap: Map<string, string>;
+    expandedAbstracts: Set<number>;
+    expandedAuthors: Set<number>;
+    toggleAbstract: (index: number) => void;
+    toggleAuthors: (index: number) => void;
+    setOpenModalPaper: (paper: any) => void;
+    setSearchTerm: (value: string) => void;
+    currentPrompt: string;
+}) => {
+    const isAbstractExpanded = expandedAbstracts.has(index);
+    const isAuthorsExpanded = expandedAuthors.has(index);
+    const isExpanded = isAbstractExpanded || isAuthorsExpanded;
     
+    // Memoize expensive computations
+    const rowBackgroundStyle = useMemo(() => 
+        getRowBackground(index, isExpanded), [index, isExpanded]);
     
-//     const [review, setReview] = useState({userId : "", comments: ""})
-//     const [currentID, setCurrent] = useState(" ")
-//     const updateReviews = async (brew: any, currentComment : any) => {
-//       const reviewedBrew = currentBrews.find((i :any) => i._id === brew._id)
-//       const newReview = [...reviewedBrew.reviews, currentComment]
-//       const newBrew = {...brew, reviews : newReview}
-//       const newBrews = currentBrews.map((i:any)=> i._id === brew._id? newBrew : i);
-//       home.updateBrew(brew._id, newBrew).then((status) => dispatch(setBrews(newBrews)));
-//       setCurrent(" ")
-//       setReview({userId : "", comments: ""})
-//     }
-  
-//     const getLikeBrews = (num : Number) => {
-//       setPage(-1)
-//       home.sortBrewByLikes(num).then((brews) => setLimits(brews));    
-//     }
+    const prediction = useMemo(() => 
+        predictionsMap.get(paper._id), [predictionsMap, paper._id]);
     
-  
-//     const searchBrew = async (name : string) => {
-//       if (name.length > 0) {
-//         setBrew({...brew, name : name})
-//         try {
-//           const namebrews = await home.findBrewsByName(name)
-//           setLimits(namebrews)
-//         } catch (error: any) {
-//           console.error(error.response.data);
-//         }
-//       } else {
-//         setLimits(currentBrews.slice(page * 10 , page * 10 + 10))
-//       }
-//     }
-  
-//     // const checkComment = (id : any) => {
-//     //   if (!currentUser) {
-//     //     navigate(`/User/Profile/${id}`)
-//     //   } else {
-//     //     navigate(`/User/Profile/${id}`)
-//     //   }
-//     // }
+    const buttonText = useMemo(() => 
+        prediction || <span>O</span>, [prediction]);
     
-  
-  
-//     useEffect(() => {
-//       setLimits(currentBrews.slice(page * 10 , page * 10 + 10))
-//     }, [page, currentBrews]);
+    const predictionButtonStyle = useMemo(() => 
+        ({ ...getPredictionColors(prediction), ...adminStyles.button.prediction }), [prediction]);
 
+    // Memoize author button styles
+    const authorButtonStyle = useMemo(() => ({
+        color: 'inherit',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: 'inherit',
+        fontWeight: 'inherit',
+        textAlign: 'center' as const,
+        width: '100%'
+    }), []);
+
+    const handleRowMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        Object.assign(e.currentTarget.style, adminStyles.row.hover);
+    }, []);
+
+    const handleRowMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        e.currentTarget.style.backgroundColor = rowBackgroundStyle.backgroundColor || '#ffffff';
+        e.currentTarget.style.transform = 'translateX(0)';
+    }, [rowBackgroundStyle.backgroundColor]);
+
+    const handleTitleMouseEnter = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.currentTarget.style.color = adminStyles.title.linkHover.color;
+    }, []);
+
+    const handleTitleMouseLeave = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+        e.currentTarget.style.color = adminStyles.title.link.color;
+    }, []);
+
+    const handleAbstractButtonMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!isAbstractExpanded) {
+            e.currentTarget.style.backgroundColor = adminStyles.button.abstractHover.backgroundColor;
+        }
+    }, [isAbstractExpanded]);
+
+    const handleAbstractButtonMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!isAbstractExpanded) {
+            e.currentTarget.style.backgroundColor = adminStyles.button.abstract.backgroundColor;
+        }
+    }, [isAbstractExpanded]);
+
+    const handleAuthorsButtonMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!isAuthorsExpanded) {
+            e.currentTarget.style.backgroundColor = adminStyles.button.authorsHover.backgroundColor;
+        }
+    }, [isAuthorsExpanded]);
+
+    const handleAuthorsButtonMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!isAuthorsExpanded) {
+            e.currentTarget.style.backgroundColor = adminStyles.button.authors.backgroundColor;
+        }
+    }, [isAuthorsExpanded]);
+
+    const handlePredictionClick = useCallback(() => {
+        setOpenModalPaper(paper);
+    }, [paper, setOpenModalPaper]);
+
+    const handleAuthorClick = useCallback((author: string) => {
+        setSearchTerm(author);
+    }, [setSearchTerm]);
+
+    const handleToggleAbstract = useCallback(() => {
+        toggleAbstract(index);
+    }, [toggleAbstract, index]);
+
+    const handleToggleAuthors = useCallback(() => {
+        toggleAuthors(index);
+    }, [toggleAuthors, index]);
+
+    // Optimized mouse event handlers for author buttons
+    const handleAuthorMouseEnter = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.currentTarget.style.textDecoration = 'underline';
+        e.currentTarget.style.color = '#007bff';
+    }, []);
+
+    const handleAuthorMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        e.currentTarget.style.textDecoration = 'none';
+        e.currentTarget.style.color = 'inherit';
+    }, []);
+
+    return (
+        <div 
+            style={rowBackgroundStyle}
+            onMouseEnter={handleRowMouseEnter}
+            onMouseLeave={handleRowMouseLeave}
+        >
+            <div className="row align-items-center text-center my-4">
+                <div className="col-3">
+                    <div className='text-center d-block'>
+                        {paper.url ? (
+                            <a href={paper.url} target="_blank" rel="noopener noreferrer" 
+                               className="text-decoration-none fw-bold"
+                               style={adminStyles.title.link}
+                               onMouseEnter={handleTitleMouseEnter}
+                               onMouseLeave={handleTitleMouseLeave}>
+                                {paper.title}
+                            </a>
+                        ) : (
+                            <strong className='fs-6' style={adminStyles.title.text}>{paper.title}</strong>
+                        )}
+                    </div>
+                    <div className="text-center">
+                        <button 
+                            onClick={handleToggleAbstract}
+                            className="btn btn-sm rounded-pill"
+                            style={isAbstractExpanded ? adminStyles.button.abstractExpanded : adminStyles.button.abstract}
+                            onMouseEnter={handleAbstractButtonMouseEnter}
+                            onMouseLeave={handleAbstractButtonMouseLeave}
+                        >
+                            {isAbstractExpanded ? (
+                                <>
+                                    <span><FaEyeSlash /></span> Hide Abstract
+                                </>
+                            ) : (
+                                <>
+                                    <span><FaEye /></span> Show Abstract
+                                </>
+                            )}
+                        </button>
+                    </div>
+                    {isAbstractExpanded && (
+                        <div 
+                            className="mt-3 p-4 rounded-3"
+                            style={adminStyles.abstract.container}
+                        >
+                            {paper.abstract}
+                        </div>
+                    )}
+                </div>
+                <div className='col-2'>
+                    <div className='w-100'>
+                        <ul className='list-unstyled' style={isAuthorsExpanded ? adminStyles.authors.listExpanded : adminStyles.authors.list}>
+                            {paper.authors.map((author: string, idx: number) => (
+                                <li key={idx} style={adminStyles.authors.item}>
+                                    <button
+                                        onClick={() => handleAuthorClick(author)}
+                                        className="btn btn-link p-0 text-decoration-none"
+                                        style={authorButtonStyle}
+                                        onMouseEnter={handleAuthorMouseEnter}
+                                        onMouseLeave={handleAuthorMouseLeave}
+                                    >
+                                        {author}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                        {paper.authors.length > 5 && (
+                            <button 
+                                onClick={handleToggleAuthors}
+                                className="btn btn-sm rounded-pill mt-2"
+                                style={isAuthorsExpanded ? adminStyles.button.authorsExpanded : adminStyles.button.authors}
+                                onMouseEnter={handleAuthorsButtonMouseEnter}
+                                onMouseLeave={handleAuthorsButtonMouseLeave}
+                            >
+                                {isAuthorsExpanded ? (
+                                    <>
+                                        <span><FaChevronUp /></span> Show Less
+                                    </>
+                                ) : (
+                                    <>
+                                        <span><FaChevronDown /></span> Show All ({paper.authors.length})
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
+                </div>
+                <div className="col-1">
+                    <div className="fw-bold" style={getRatingColor(paper.rating)}>
+                        {paper.rating}
+                    </div>
+                </div>
+                <div className='col-1'>
+                    <div className='w-100'>
+                        <ul className='list-unstyled'>
+                            {paper.ratings.map((rating: number, idx: number) => (
+                                <li key={idx} style={getIndividualRatingColor(rating)}>
+                                    {rating}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+                <div className='col-1'>
+                    <div className='w-100'>
+                        <ul className='list-unstyled'>
+                            {paper.confidences.map((confidence: number, idx: number) => (
+                                <li key={idx} style={getIndividualRatingColor(confidence)}>
+                                    {confidence}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+                <div className='col-2'>
+                    <span className="badge rounded-pill px-3" 
+                          style={{ ...getDecisionColors(paper.decision), ...adminStyles.badge.decision }}>
+                        {paper.decision}
+                    </span>
+                </div>
+                <div className='col-2'>
+                    <div className="text-muted" style={adminStyles.prediction.container}>
+                        <button 
+                            className="btn btn-sm rounded-pill" 
+                            style={predictionButtonStyle}
+                            onClick={handlePredictionClick}
+                        >
+                            {buttonText}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+});
+
+// Main component with optimized state management and data fetching
+// Optimization Strategy:
+// 1. Parallel data fetching - start fetching immediately when year changes
+// 2. Combined state updates - reduce re-renders by batching state changes
+// 3. Skip debouncing for year changes - immediate UI response
+// 4. Optimistic loading states - show feedback before data arrives
+function GuestHome({ initialSearchTerm = '' }: { initialSearchTerm?: string }) {
+
+    const { currentPreds } = useSelector((state: ProjectState) => state.predictionReducer);
+    const dispatch = useDispatch();
+    const { currentYear, loading: yearLoading } = useYear();
+
+    // Consolidated state management
+    const [state, setState] = useState({
+        bib: [] as any[],
+        currentPage: 1,
+        pageInput: '1',
+        totalRecords: 0,
+        searchTerm: initialSearchTerm,
+        isLoadingData: false,
+        isLoadingPredictions: false,
+        userPrompt: '',
+        currentPrompt: home.BASIC_PROMPT,
+        openModalPaper: null as any | null,
+        showConfirmationModal: false,
+        confirmationPrompt: '',
+        user_rebuttal: false,
+        pub_rebuttal: false,
+        showPrompt: false,
+        expandedAbstracts: new Set<number>(),
+        expandedAuthors: new Set<number>(),
+        isYearChanging: false
+    });
+
+    const recordsPerPage = 20;
+    const searchTimeoutRef = useRef<NodeJS.Timeout | number>();
+
+    // Memoized computations
+    const processedBib = useMemo(() => processPapersData(state.bib), [state.bib]);
+    const totalPages = useMemo(() => Math.ceil(state.totalRecords / recordsPerPage), [state.totalRecords]);
     
-//     const myActivities = () => {
-//         if (!currentUser) {
-//             alert('Please Log In')
-//             navigate(`../../User/Signin`)
-//         } else {
-//             navigate(`../User/${currentUser._id}`)
-//         }
-//     }
+    const predictionsMap = useMemo(() => {
+        const map = new Map();
+        if (currentPreds) {
+            currentPreds.forEach(pred => {
+                map.set(pred.paper_id, pred.prediction);
+            });
+        }
+        return map;
+    }, [currentPreds]);
 
-//     useEffect(() => {
-//       addOwnerBrews()
-//     }, [currentUser]);
-  
-//   return (
-//     <>
-//         <div className='d-flex ms-5 mb-3'>
-//             <button onClick={() => highLightOwner()}
-//               className={currentUser && currentUser.role === "OWNER"? "btn bg-warning-subtle  me-2 " : "d-none"}
-//               type="button">My Breweries </button>
+    // Optimized data fetching with debouncing
+    const fetchPaginatedData = useCallback(async () => {
+        setState(prev => ({ ...prev, isLoadingData: true }));
+        try {
+            const skip = (state.currentPage - 1) * recordsPerPage;
+            const result = await home.findPaginatedIclrSubmissions(recordsPerPage, skip, state.searchTerm);
+            setState(prev => ({
+                ...prev,
+                bib: result.data,
+                totalRecords: result.totalCount,
+                isLoadingData: false,
+                isYearChanging: false
+            }));
+            dispatch(setIclr(result.data));
+            dispatch(setIclrName(result.name));
+        } catch (error: any) {
+            console.error('Error fetching paginated data:', error.response?.data || error);
+            setState(prev => ({ ...prev, isLoadingData: false, isYearChanging: false }));
+        }
+    }, [state.currentPage, state.searchTerm, dispatch, currentYear]);
 
-//             <Link to ={ `../Admin`}
-//             className={currentUser && currentUser.role === "ADMIN"? "btn bg-secondary-subtle me-2" : "d-none"} >
-//                 Settings </Link>
-//             <button onClick={() => myActivities()}
-//                 className="btn bg-info-subtle me-2 "
-//             type="button"> My Activities </button>
-            
-//             <input placeholder="search brewery name...." defaultValue={brew.name}
-//                 className="border rounded-4 p-2 me-3 d-none d-sm-block"
-//                 onChange={(e) => searchBrew(e.target.value)}/>   
-//             <button className="dropdown btn bg-success-subtle me-2 dropdown-toggle " type="button"
-//                     id="dd" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-//                 Views 
-//             </button>
-//             <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
-//                 <a className="dropdown-item btn" onClick={() => getLikeBrews(10)}>Top 10 Likes</a>
-//                 <a className="dropdown-item btn" onClick={() => getFollowBrews(10)}>Top 10 Followers</a>
-//                 <a className="dropdown-item btn" onClick={() => getRandomBrews(10)}>Random 10</a>
-//             </div>
-//             <button onClick={() => setPage(page -1)}
-//                 className={limitedBrews.length >= 0 && page > 0?"btn bg-outline-secondary-subtle me-2 ": "d-none"}  type="button"
-//             > {"<< Prev"} </button>
-//             <button onClick={() => setPage(page +1)}
-//             className={limitedBrews.length > 0 && page >= 0?"btn bg-outline-secondary-subtle me-2 ": "d-none"} type="button"
-//             > {"Next >>"}       
-//             </button>
-//             <button onClick={() => setPage(0)}
-//             className={limitedBrews.length === 0 || page === -1?"btn bg-outline-secondary-subtle ": "d-none"} type="button"
-//             > {">> Front"}          
-//             </button>
-//         </div>
+    // Optimized predictions fetching
+    const fetchPredictionsForCurrentPage = useCallback(async (papers: any[], prompt: string, rebuttal: boolean) => {
+        if (papers.length === 0) return;
+        
+        setState(prev => ({ ...prev, isLoadingPredictions: true }));
+        try {
+            const paperIds = papers.map((p: any) => p._id);
+            const newPredictions = await home.getPredsByPaperIdsAndPromptAndRebuttal(paperIds, prompt, rebuttal ? 1 : 0);
+            const processedPredictions = newPredictions.map((p: any) => ({
+                ...p,
+                prediction: p.prediction.toLowerCase() === 'yes' || p.prediction.toLowerCase() === 'accept' ? "Accept" 
+                    : p.prediction.toLowerCase() === 'no' || p.prediction.toLowerCase() === 'reject' ? "Reject" : "O"
+            }));
+            dispatch(setCurrentPreds(processedPredictions));
+        } catch (error) {
+            console.error('Error fetching predictions:', error);
+        } finally {
+            setState(prev => ({ ...prev, isLoadingPredictions: false }));
+        }
+    }, [dispatch]);
 
-//         <ul className="list-group rounded-2 d-flex flex-grow-1 ps-5 my-2 "> 
-//             {!limitedBrews && "there is no result ~~"}
-//             {limitedBrews && limitedBrews.map((br: any, index : number) => 
-//             ( 
-//                 <li 
-//                 className={br.name.includes('Owner')? "list-group-item border-warning-subtle border-3" : "list-group-item"} >
-//                     <div className='row d-flex flex-grow-1 border rounded-2 p-2'>
-//                     <div 
-//                         className={br.name.includes('Owner')? "col-3 text-primary text-danger flex-fill" : "col-3 text-primary"} >
-//                         <FaEarlybirds/> <strong>Brewery</strong>  <br></br><Link to = {`${br.website_url}`} className='text-decoration-none' > <strong>{br.name}</strong></Link> 
-//                     </div>
-//                     <div className={br.name.includes('Owner')? 'col' : 'd-none'}>
-//                           <Link to = {`/Details/Owner/${br.id}`}
-//                           className="btn btn-outline-primary bg-info-subtle rounded-4">
-//                               Manage Details
-//                           </Link>
-//                     </div>
-//                     <div className={br.name.includes('Owner')? "d-none" : 'col text-success d-none d-md-block'} >
-//                     <strong>Type</strong> {br.brewery_type}
-//                     </div>
-//                     <div className={br.name.includes('Owner')? "d-none" : 'col text-success d-none d-md-block'} >
-//                         <strong>Serving</strong><br></br>
-//                         {br.beer_types && br.beer_types.map((cm : any) => <li className='ms-4'> {cm} </li>)} 
-//                     </div>
-//                     <div className={br.name.includes('Owner')? "d-none" : 'col-4 text-success d-none d-sm-block'} >
-//                         {/* <ul className='d-none d-sm-block text-decoration-none'> */}
-//                           <strong>Tel : </strong>{br.phone}<br></br><strong>Address : </strong><br></br>
-//                         {br.address && Object.entries(br.address).map(([key, value]) => (
-//                             <span className='font-italic' key={key}>
-//                             {value as React.ReactNode},
-//                             </span>
-//                         ))}
-//                         {/* </ul> */}
-//                     </div>
-//                     <div className='col-2 float-end'>
-//                             <button onClick={() => updateLikes(br._id, currentUser._id)}
-//                               className= "mb-2 btn btn-sm btn-outline-danger bg-danger-subtle text-danger rounded-5 form-control">
-//                                   <FaHeart/> like : {likeCount} 
-//                             </button> <br></br>
-//                             <button onClick={() => setCurrent(br._id)}
-//                             className={currentUser && !br.name.includes('Owner')? "mt-2 btn btn-sm btn-outline-success bg-success-subtle text-success rounded-5 form-control" : "d-none"}>
-//                                 <FaComment/> Comment
-//                             </button>
+    // Debounced search effect with optimization for year changes
+    useEffect(() => {
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+        
+        // Skip debounce if search term is empty (during year change)
+        if (state.searchTerm === '') {
+            setState(prev => ({ 
+                ...prev, 
+                currentPage: 1,
+                expandedAbstracts: new Set(),
+                expandedAuthors: new Set()
+            }));
+        } else {
+            searchTimeoutRef.current = setTimeout(() => {
+                setState(prev => ({ 
+                    ...prev, 
+                    currentPage: 1,
+                    expandedAbstracts: new Set(),
+                    expandedAuthors: new Set()
+                }));
+            }, 300);
+        }
 
-//                             <textarea placeholder='add comments....' value={review.comments} 
-//                             className={br._id == currentID? "border float-end my-2" : "d-none"}
-//                             onChange={(e) => setReview({userId : currentUser._id, comments: e.target.value})}
-//                             />
-//                             <button onClick={() => setCurrent(" ")}
-//                             className={br._id == currentID? "btn btn-sm bg-danger-subtle float-end my-2 ms-2 rounded-5" : "d-none"}>
-//                                 Cancel
-//                             </button>
-//                             <button onClick={() => updateReviews(br, review)}
-//                               className={br._id == currentID? "btn btn-sm bg-success-subtle float-end my-2 rounded-5" : "d-none"}>
-//                                   Submit
-//                             </button>
-//                     </div>   
-//                     </div>
-//                     {br.reviews && br.reviews.map((cm : any) => {
-//                     const usr = users.find((i)=>i._id === cm.userId)
-//                     if(usr) {
-//                         return (
-//                         <span className='py-2 text-warning me-2 p-2'><FaSmile/> {cm.comments} 
-//                         {/* <button className='btn bg-outline-light rounded- 5 text-danger' 
-//                         onClick={() => checkComment(usr._id)}
-//                             > @ {usr.username}</button> */}
-//                         </span>
-//                         );}}
-//                       )}       
-//                 </li>))
-//                 }  
-//                 <span className={ limitedBrews.length == 0 ? "text-danger m-5" : "d-none"}>
-//                 ----------- No Result -----------</span>
-//         </ul>
-//     </>
-//   );
-// }
-// export default GuestHome;
-// function dispatch(arg0: any) {
-//   throw new Error('Function not implemented.');
-// }
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, [state.searchTerm]);
 
+    // Main data fetching effect - start immediately when year changes
+    useEffect(() => {
+        if (currentYear) {
+            fetchPaginatedData();
+        }
+    }, [currentYear, fetchPaginatedData]);
+
+    // Secondary effect for year loading state
+    useEffect(() => {
+        if (!yearLoading && currentYear && state.bib.length === 0) {
+            // Only fetch if we don't have data yet
+            fetchPaginatedData();
+        }
+    }, [yearLoading, currentYear, state.bib.length, fetchPaginatedData]);
+
+    // Reset to first page and clear UI state when year changes - combined state update
+    useEffect(() => {
+        console.log(`GuestHome: Year changed to ${currentYear}, resetting state...`);
+        setState(prev => ({ 
+            ...prev, 
+            currentPage: 1, 
+            pageInput: '1',
+            searchTerm: '',
+            bib: [],
+            totalRecords: 0,
+            expandedAbstracts: new Set(),
+            expandedAuthors: new Set(),
+            isYearChanging: true
+        }));
+    }, [currentYear]);
+
+    // Update search term when initialSearchTerm prop changes
+    useEffect(() => {
+        if (initialSearchTerm !== state.searchTerm) {
+            setState(prev => ({ 
+                ...prev, 
+                searchTerm: initialSearchTerm,
+                currentPage: 1,
+                pageInput: '1',
+                expandedAbstracts: new Set(),
+                expandedAuthors: new Set()
+            }));
+        }
+    }, [initialSearchTerm]);
+
+    // Predictions fetching effect - run in parallel with data fetching
+    useEffect(() => {
+        if (state.bib.length > 0) {
+            // Fetch predictions immediately when data is available
+            fetchPredictionsForCurrentPage(state.bib, state.currentPrompt, state.pub_rebuttal);
+        }
+    }, [state.bib, state.currentPrompt, state.pub_rebuttal, fetchPredictionsForCurrentPage]);
+
+    // Optimized event handlers
+    const handlePrompting = useCallback(async (url: string, id: string, rebuttal: number) => {
+        const promptToUse = state.userPrompt || home.BASIC_PROMPT;
+        try {
+            const response = await home.promptSubmissionByUrl(url, state.confirmationPrompt, rebuttal);
+            const prediction = response.toLowerCase() === 'yes' || response.toLowerCase() === 'accept' ? "Accept" : "Reject";
+            dispatch(updatePrediction({ paper_id: id, prompt: promptToUse, prediction }));
+            setState(prev => ({
+                ...prev,
+                openModalPaper: null,
+                showConfirmationModal: false,
+                user_rebuttal: false
+            }));
+        } catch (error) {
+            console.error(error);
+        }
+    }, [state.userPrompt, state.confirmationPrompt, dispatch]);
+
+    const goToNextPage = useCallback(() => {
+        if (state.currentPage < totalPages) {
+            setState(prev => ({ ...prev, currentPage: prev.currentPage + 1 }));
+        }
+    }, [state.currentPage, totalPages]);
+
+    const goToPreviousPage = useCallback(() => {
+        if (state.currentPage > 1) {
+            setState(prev => ({ ...prev, currentPage: prev.currentPage - 1 }));
+        }
+    }, [state.currentPage]);
+
+    // Generic setter function to reduce code duplication
+    const setStateField = useCallback((field: string, value: any) => {
+        setState(prev => ({ ...prev, [field]: value }));
+    }, []);
+
+    // Specific setters for commonly used fields
+    const setCurrentPage = useCallback((page: number) => {
+        setStateField('currentPage', page);
+    }, [setStateField]);
+
+    const setSearchTerm = useCallback((value: string) => {
+        setStateField('searchTerm', value);
+    }, [setStateField]);
+
+    const setPageInput = useCallback((value: string) => {
+        setStateField('pageInput', value);
+    }, [setStateField]);
+
+    const setCurrentPrompt = useCallback((value: string) => {
+        setStateField('currentPrompt', value);
+    }, [setStateField]);
+
+    const setPubRebuttal = useCallback((value: boolean) => {
+        setStateField('pub_rebuttal', value);
+    }, [setStateField]);
+
+    const setOpenModalPaper = useCallback((paper: any) => {
+        setStateField('openModalPaper', paper);
+    }, [setStateField]);
+
+    const setUserPrompt = useCallback((value: string) => {
+        setStateField('userPrompt', value);
+    }, [setStateField]);
+
+    const setShowConfirmationModal = useCallback((value: boolean) => {
+        setStateField('showConfirmationModal', value);
+    }, [setStateField]);
+
+    const setConfirmationPrompt = useCallback((value: string) => {
+        setStateField('confirmationPrompt', value);
+    }, [setStateField]);
+
+    const setUserRebuttal = useCallback((value: boolean) => {
+        setStateField('user_rebuttal', value);
+    }, [setStateField]);
+
+    const toggleAbstract = useCallback((index: number) => {
+        setState(prev => {
+            const newExpanded = new Set(prev.expandedAbstracts);
+            if (newExpanded.has(index)) {
+                newExpanded.delete(index);
+            } else {
+                newExpanded.add(index);
+            }
+            return { ...prev, expandedAbstracts: newExpanded };
+        });
+    }, []);
+
+    const toggleAuthors = useCallback((index: number) => {
+        setState(prev => {
+            const newExpanded = new Set(prev.expandedAuthors);
+            if (newExpanded.has(index)) {
+                newExpanded.delete(index);
+            } else {
+                newExpanded.add(index);
+            }
+            return { ...prev, expandedAuthors: newExpanded };
+        });
+    }, []);
+
+    return (
+        <div style={adminStyles.container}>
+            <div className='py-2 d-flex justify-content-center'> 
+                <div className='d-flex' style={{ height: 'calc(100vh - 150px)', overflow: 'hidden' }}>
+                    <div className='col-12 flex-grow-1 d-flex flex-column' style={{ overflow: 'hidden' }}>
+                        <div className="d-flex mb-3 justify-content-center align-items-center gap-4">
+                            {(yearLoading || state.isYearChanging) && (
+                                <div className="d-flex align-items-center text-primary">
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>...</span>
+                                </div>
+                            )}
+                            <Pagination 
+                                currentPage={state.currentPage}
+                                totalPages={totalPages}
+                                totalRecords={state.totalRecords}
+                                pageInput={state.pageInput}
+                                setPageInput={setPageInput}
+                                goToNextPage={goToNextPage}
+                                goToPreviousPage={goToPreviousPage}
+                                setCurrentPage={setCurrentPage}
+                                searchTerm={state.searchTerm}
+                                setSearchTerm={setSearchTerm}
+                            />
+                            <SearchBar 
+                                searchTerm={state.searchTerm}
+                                setSearchTerm={setSearchTerm}
+                            />
+                        </div>
+                        <div className="d-flex flex-column" style={{ overflow: 'hidden' }}>
+                            <div className="card border-0 shadow-lg flex-grow-1 d-flex flex-column" style={{ ...adminStyles.table.card, overflow: 'hidden' }}> 
+                                <div className="card-header" style={adminStyles.table.header}>
+                                    <div className="row align-items-center text-center" style={adminStyles.table.headerRow}>
+                                        <div className="col-3">Paper Title</div>
+                                        <div className='col-2'>Authors</div>
+                                        <div className="col-1">Rating</div>
+                                        <div className='col-1'>Ratings</div>
+                                        <div className='col-1 px-1'>Confidence</div>
+                                        <div className='col-2'>Decision</div>
+                                        <div className='col-2'>
+                                            <span className="d-flex flex-column align-items-center justify-content-center h-100">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <button 
+                                                        onClick={() => setState(prev => ({ ...prev, showPrompt: !prev.showPrompt }))}
+                                                        className="btn btn-bg rounded-pill text-white"
+                                                    >
+                                                        {state.showPrompt ? (
+                                                            <>
+                                                            <span><FaEyeSlash/></span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                            <span><FaEye /></span> 
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                    <PromptDropdown
+                                                        selectedPrompt={state.currentPrompt}
+                                                        onPromptChange={setCurrentPrompt}
+                                                        isLoading={state.isLoadingPredictions}
+                                                    />
+                                                </div>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="d-flex justify-content-end mt-4 me-5" style={{
+                                    borderBottom: '1px solid #e9ecef',
+                                    backgroundColor: '#ffffff',
+                                    borderBottomLeftRadius: '8px',
+                                    borderBottomRightRadius: '8px'
+                                }}>
+                    
+                                    <RebuttalToggle
+                                        checked={state.pub_rebuttal}
+                                        onChange={setPubRebuttal}
+                                    />
+                                </div>
+                                <div className="card-body p-0 flex-grow-1" style={{ ...adminStyles.table.body, overflow: 'auto' }}>
+                                {state.showPrompt && (
+                                        <div><b>Current Prompt:</b> {home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 0 ? "Basic" : home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 1 ? "Latest" : "Custom"}
+                                        <tr style={{ 
+                                        backgroundColor: '#f8fafc',
+                                        borderColor: '#e5e7eb'
+                                        }}>
+                                        <td colSpan={10} className="p-3" style={{ 
+                                            borderColor: '#e5e7eb',
+                                            color: '#374151',
+                                            fontSize: '0.8rem',
+                                            lineHeight: '1.3'
+                                        }}>
+                                            <div className="bg-light p-3 rounded" >
+                                            {state.currentPrompt}
+                                            </div>
+                                        </td>
+                                        </tr>
+                                        </div>
+                                    )}
+                                    {(state.isLoadingData || yearLoading || state.isYearChanging) && (
+                                        <div className="text-center py-5" style={adminStyles.loadingState.container}>
+                                            <div className="spinner-border text-primary" role="status">
+                                                <span className="visually-hidden">Loading...</span>
+                                            </div>
+                                            <p>{state.isYearChanging ? 'Changing year...' : yearLoading ? 'Loading year...' : 'Loading papers...'}</p>
+                                        </div>
+                                    )}
+                                    {!state.isLoadingData && processedBib.length === 0 && state.searchTerm && (
+                                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
+                                            <i className="fas fa-search" style={adminStyles.emptyState.icon}></i>
+                                            <h5>No papers found</h5>
+                                            <p>No papers match "{state.searchTerm}"</p>
+                                        </div>
+                                    )}
+                                    {!state.isLoadingData && processedBib.length === 0 && !state.searchTerm && (
+                                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
+                                            <i className="fas fa-inbox" style={adminStyles.emptyState.icon}></i>
+                                            <h5>No papers available</h5>
+                                            <p>There are no papers to display</p>
+                                        </div>
+                                    )}
+                                    {!state.isLoadingData && processedBib.length > 0 && processedBib.map((br: any, index: number) => 
+                                        <PaperRow
+                                            key={br._id || index}
+                                            paper={br}
+                                            index={index}
+                                            predictionsMap={predictionsMap}
+                                            expandedAbstracts={state.expandedAbstracts}
+                                            expandedAuthors={state.expandedAuthors}
+                                            toggleAbstract={toggleAbstract}
+                                            toggleAuthors={toggleAuthors}
+                                            setOpenModalPaper={setOpenModalPaper}
+                                            setSearchTerm={setSearchTerm}
+                                            currentPrompt={state.currentPrompt}
+                                        />
+                                    )}  
+                                </div>
+                            </div>  
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <PromptInputModal
+                openModalPaper={state.openModalPaper}
+                userPrompt={state.userPrompt}
+                setUserPrompt={setUserPrompt}
+                currentPrompt={state.currentPrompt}
+                setOpenModalPaper={setOpenModalPaper}
+                onConfirm={() => {
+                    if (state.openModalPaper) {    
+                        const promptToUse = state.userPrompt || state.currentPrompt;
+                        setUserPrompt(promptToUse);
+                        setConfirmationPrompt(util.prompt_tmp.replace("{{ task }}", promptToUse));
+                        setShowConfirmationModal(true);
+                    }
+                }}
+            />
+
+            <ConfirmationModal
+                showConfirmationModal={state.showConfirmationModal}
+                openModalPaper={state.openModalPaper}
+                confirmationPrompt={state.confirmationPrompt}
+                setConfirmationPrompt={setConfirmationPrompt}
+                user_rebuttal={state.user_rebuttal}
+                setUserRebuttal={setUserRebuttal}
+                setShowConfirmationModal={setShowConfirmationModal}
+                onConfirm={() => {
+                    if (state.openModalPaper) {    
+                        handlePrompting(state.openModalPaper.url, state.openModalPaper._id, state.user_rebuttal ? 1 : 0);
+                    }
+                }}
+            />
+        </div>
+    );
+}
+
+export default GuestHome;
