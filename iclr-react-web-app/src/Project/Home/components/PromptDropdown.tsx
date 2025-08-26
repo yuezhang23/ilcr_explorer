@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import * as home from '../home';
 import { dropdownStyles } from './dropdownStyles';
 import { adminStyles, getDropdownMenuStyle } from '../styles/adminStyles';
+import './PromptDropdown.css';
 
 interface PromptDropdownProps {
   selectedPrompt: string;
@@ -29,7 +30,7 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({
   // Helper function to get prompt display name
   const getPromptDisplayName = (prompt: string) => {
     const index = home.PROMPT_CANDIDATES.indexOf(prompt);
-    return index !== -1 ? `Prompt ${index + 1}` : 'Unknown';
+    return index !== -1 ? `Prompt ${index + 1}` : `Prompt ${home.PROMPT_CANDIDATES.length}`;
   };
 
   // Helper function to get prompt color based on type
@@ -76,6 +77,18 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({
     position: 'relative' as const
   };
 
+  // Custom dropdown menu style that overrides adminStyles
+  const dropdownMenuStyle: React.CSSProperties = {
+    zIndex: 1000,
+    marginTop: '4px',
+    // Force height constraint and scrolling
+    maxHeight: '300px',
+    height: '300px',
+    overflow: 'auto',
+    overflowY: 'auto',
+    overflowX: 'hidden'
+  };
+
   return (
     <div className={`position-relative prompt-dropdown-container ${className}`}>
       <button
@@ -91,14 +104,9 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({
       
       {dropdownOpen && (
         <div 
-          className="dropdown-menu show position-absolute"
-          style={{
-            ...getDropdownMenuStyle(true),
-            top: '100%',
-            left: '0',
-            width: '120px',
-            minWidth: '120px'
-          }}
+          className="dropdown-menu show position-absolute prompt-dropdown-menu"
+          style={dropdownMenuStyle}
+          data-testid="prompt-dropdown-menu"
         >
           {home.PROMPT_CANDIDATES.map((prompt, index) => {
             const isSelected = selectedPrompt === prompt;
@@ -141,4 +149,4 @@ const PromptDropdown: React.FC<PromptDropdownProps> = ({
   );
 };
 
-export default PromptDropdown; 
+export default PromptDropdown;

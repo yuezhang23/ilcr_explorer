@@ -6,7 +6,6 @@ import * as home from './home';
 import axios from "axios";
 import { setIclr, setIclrName } from '../Reducers/iclrReducer';
 import { setCurrentPreds, setRebuttalPreds, setNonRebuttalPreds } from '../Reducers/predictionReducer';
-import { useYear } from '../../contexts/YearContext';
 import { adminStyles } from './styles/adminStyles';
 import { ratingStyles } from './styles/ratingStyles';
 import './styles/admin.css';
@@ -15,6 +14,7 @@ import PromptCheckbox from './components/PromptCheckbox';
 import YearCheckbox from './components/YearCheckbox';
 import ConfirmationModal from './components/ConfirmationModal';
 import PredictionMismatchTable from './components/PredictionMismatchTable';
+import { useYear } from '../../contexts/YearContext';
 
 axios.defaults.withCredentials = true;
 
@@ -117,9 +117,8 @@ function RatingHome() {
     const {currentPreds, rebuttalPreds, nonRebuttalPreds} = useSelector((state: ProjectState) => state.predictionReducer)
     const dispatch = useDispatch();
     
-    
-    // Only destructure currentYear to avoid unnecessary re-renders
-    const { currentYear } = useYear();
+    // Use the global year context
+    const { currentYear, setYear } = useYear();
     
     const [allPapers, setAllPapers] = useState<any[]>([]); // For plot data - keeping as any[] since it comes from API
     
@@ -130,7 +129,7 @@ function RatingHome() {
     // Updated to handle single prompt selection
     const [selectedPrompt, setSelectedPrompt] = useState<string>(home.BASIC_PROMPT);
     const [selectedConferences, setSelectedConferences] = useState<string[]>(['ICLR']);
-    const [selectedYear, setSelectedYear] = useState<string>('2024');
+    const [selectedYear, setSelectedYear] = useState<string>(currentYear);
     const [pub_rebuttal, setPubRebuttal] = useState<boolean>(false);
     const [field, setField] = useState<string>("rating");
     const [promt_n, setPromt_n] = useState<string>(home.BASIC_PROMPT);
@@ -276,9 +275,15 @@ function RatingHome() {
     }, []);
 
     // Handle year selection change
-    const handleYearChange = useCallback((year: string) => {
+    const handleYearChange = useCallback(async (year: string) => {
         setSelectedYear(year);
-    }, []);
+        // Update global year context
+        try {
+            await setYear(year);
+        } catch (error) {
+            console.error('Failed to update global year:', error);
+        }
+    }, [setYear]);
     
     return (
     <div style={{...adminStyles.container, ...ratingStyles.container}} className="p-2 mt-4">
@@ -294,9 +299,12 @@ function RatingHome() {
                 }}>
                     <h6 className="mb-0">Controls</h6>
                 </div>
-                <div className="card-body p-4" style={ratingStyles.leftMenuBody}>
+                <div className="card-body p-4" style={{
+                    ...ratingStyles.leftMenuBody,
+                    maxHeight: 'calc(100vh - 200px)',
+                    overflowY: 'auto'
+                }}>
                     <div className="d-flex flex-column gap-4">
-                        {/* <div className="w-100"> */}
                             <div className="d-flex gap-3" style={ratingStyles.formControlContainer}>
                                 <div className="flex-fill">
                                     <PromptCheckbox
@@ -338,33 +346,7 @@ function RatingHome() {
                                 >
                                     Prompt
                                 </button>
-                                {/* <div className="ms-2 d-flex align-items-center gap-1">
-                                    <label 
-                                        htmlFor="size-input" 
-                                        className="form-label ms-3"
-                                        style={{
-                                            fontSize: '0.875rem',
-                                            fontWeight: '500',
-                                            color: '#6b7280'
-                                        }}
-                                    >
-                                        Samples
-                                    </label>
-                                    <input 
-                                        id="size-input"
-                                        type="text" 
-                                        value={size} 
-                                        onChange={(e) => setSize(e.target.value)}
-                                        className="form-control form-control-sm"
-                                        style={{ 
-                                            width: '80px',
-                                            fontSize: '0.875rem'
-                                        }}
-                                        placeholder="200"
-                                    />
-                                </div> */}
                             </div>
-                        {/* </div> */}
                     </div>
                 </div>
             </div>
@@ -393,13 +375,13 @@ function RatingHome() {
                 {/* Rating Distribution Chart */}
                 {!isLoadingAllData && processedAllPapers.length > 0 && (
                     <div className="card border-0 shadow-lg" style={adminStyles.table.card}>
-                        <div className="card-header border-0 py-3" style={adminStyles.table.header}>
+                        <div className="card-header border-0 py-3 sticky-top" style={{...adminStyles.table.header, position: 'sticky', top: 0, zIndex: 1020, backgroundColor: 'white'}}>
                             <div className="d-flex justify-content-between align-items-center">
                                 
                                 <h6 className="mb-0">
                                     {showPredictionErrors ? 'Prediction Analysis' : 'Prediction Distribution'}
                                 </h6>
-                                <button
+                                {/* <button
                                     className="btn btn-sm"
                                     onClick={() => setShowPredictionErrors(!showPredictionErrors)}
                                     disabled={isLoadingPredictions}
@@ -416,11 +398,11 @@ function RatingHome() {
                                     }}
                                 >
                                     <i className={`fas ${showPredictionErrors ? 'fa-chart-bar' : 'fa-exclamation-triangle'} me-1`}></i>
-                                    {showPredictionErrors ? 'Distribution' : 'Analysis'}
-                                </button>
+                                    {showPredictionErrors ? 'Distribution' : 'Mismatch'}
+                                </button> */}
                             </div>
                         </div>
-                        <div className="card-body p-4">
+                        <div className="card-body p-4" style={{maxHeight: '70vh', overflowY: 'auto'}}>
                             {isLoadingPredictions ? (
                                 <div className="d-flex justify-content-center align-items-center" style={ratingStyles.loadingContainer}>
                                     <div className="text-center">

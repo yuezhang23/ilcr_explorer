@@ -10,7 +10,7 @@
   margin: 0 !important;
   font-family: inherit !important;
   position: relative !important;
-  z-index: 1002 !important;
+  z-index: 10002 !important;
 }
 
 .collapse-item:hover {
@@ -29,7 +29,44 @@
 .collapse-menu {
   box-sizing: border-box !important;
   overflow: visible !important;
-  z-index: 1001 !important;
+  z-index: 10001 !important;
+}
+
+/* Ensure proper positioning context for dropdown containers */
+.collapse-container {
+  position: relative !important;
+  z-index: 10001 !important;
+}
+
+/* Ensure dropdown menus appear above all other elements */
+.collapse-menu {
+  position: absolute !important;
+  z-index: 10001 !important;
+  background: #fff !important;
+  border: 1px solid #dee2e6 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+  min-width: 120px !important;
+  /* Ensure dropdown is above all other elements */
+  pointer-events: auto !important;
+  /* Force the dropdown to be on top */
+  transform: translateZ(0) !important;
+}
+
+/* Additional rules to ensure dropdown visibility */
+.nav-scroll-container .collapse-menu {
+  z-index: 10001 !important;
+  position: absolute !important;
+  /* Ensure dropdown appears above sticky elements */
+  transform: translateZ(0) !important;
+}
+
+/* Ensure the Nav component itself is above other elements */
+.nav-scroll-container {
+  z-index: 10000 !important;
+  position: fixed !important;
+  /* Force the nav to be on top */
+  transform: translateZ(0) !important;
 }
 
 /* Prevent any default link styling conflicts */

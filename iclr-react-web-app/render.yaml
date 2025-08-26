@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: iclr-react-frontend
+    env: static
+    buildCommand: npm run build:production
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://your-backend-name.onrender.com
+      - key: REACT_APP_ENVIRONMENT
+        value: production
+      - key: GENERATE_SOURCEMAP
+        value: false

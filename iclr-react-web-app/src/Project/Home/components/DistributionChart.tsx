@@ -156,6 +156,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     const rebuttalRejectData = [];
     const nonRebuttalAcceptData = [];
     const nonRebuttalRejectData = [];
+    const paperCountData = []; // Add array for actual paper counts
     
     for (let i = 0; i < filteredBins.length; i++) {
       acceptPredData.push(filteredBins[i].acceptCount);
@@ -166,6 +167,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
       rebuttalRejectData.push(filteredBins[i].rebuttalRejectCount);
       nonRebuttalAcceptData.push(filteredBins[i].nonRebuttalAcceptCount);
       nonRebuttalRejectData.push(filteredBins[i].nonRebuttalRejectCount);
+      paperCountData.push(filteredBins[i].count); // Add actual paper count
     }
 
     // Create datasets array - always show all cases
@@ -270,6 +272,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
     return {
       labels,
       datasets,
+      paperCountData, // Add paper count data for table display
       stats: {
         totalPapers: totalPapersWithPredictions,
         totalAccepts,
@@ -319,6 +322,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           text: 'Average ' + field.charAt(0).toUpperCase() + field.slice(1) + ' Range',
           font: {
             weight: 'bold' as const,
+            size: 14,
           },
         },
         grid: {
@@ -333,6 +337,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           text: 'Number of Papers',
           font: {
             weight: 'bold' as const,
+            size: 14,
           },
         },
         grid: {
@@ -357,10 +362,10 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
             {['rating', 'confidence', 'soundness', 'presentation', 'contribution'].map((option) => (
               <button
                 key={option}
-                className={`btn btn-sm ${fieldValue === option ? 'btn-primary' : 'btn-outline-secondary'}`}
+                className={`btn btn ${fieldValue === option ? 'btn-primary' : 'btn-outline-secondary'}`}
                 onClick={() => setField(option)}
                 disabled={isLoadingPredictions}
-                style={{ fontSize: '0.8rem', padding: '0.25rem 0.5rem' }}
+                style={{ fontSize: '1.0rem', padding: '0.25rem 0.5rem', width: '120px' }}
               >
                 {option.charAt(0).toUpperCase() + option.slice(1)}
               </button>
@@ -369,12 +374,13 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
         </div>
       </div>
       
+      {/* Chart */}
       <div style={{ height: '450px', width: '100%' }}>
         <Bar data={chartData} options={options} />
       </div>
 
       {/* Rating Distribution Table - Transposed */}
-      <div className="mt-0">
+      <div className="mt-2">
         <div className="table-responsive">
           <table className="table table-sm table-bordered" style={{ fontSize: '0.75rem' }}>
             <thead className="table-light">
@@ -395,7 +401,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
             <tbody>
               {/* Non-Rebuttal Predictions Row */}
               <tr>
-                <td className="fw-bold text-success">Pred Accept % - Non-Rebuttal</td>
+                <td className="fw-bold text-success">Predicted Accept % - <span className="small text-black">on Non-Rebuttal Reviews</span></td>
                 {chartData.labels.map((label, index) => {
                   const nonRebuttalAccept = chartData.datasets[0].data[index];
                   const nonRebuttalReject = chartData.datasets[1].data[index];
@@ -416,7 +422,7 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
               
               {/* Rebuttal Predictions Row */}
               <tr>
-                <td className="fw-bold text-success">Pred Accept % - Rebuttal</td>
+                <td className="fw-bold text-success">Predicted Accept % - <span className="small text-black">on Rebuttal Reviews</span></td>
                 {chartData.labels.map((label, index) => {
                   const rebuttalAccept = chartData.datasets[2].data[index];
                   const rebuttalReject = chartData.datasets[3].data[index];
@@ -460,14 +466,11 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
               <tr className="table-light">
                 <td className="fw-bold">Paper Count</td>
                 {chartData.labels.map((label, index) => {
-                  const nonRebuttalAccept = chartData.datasets[0].data[index];
-                  const nonRebuttalReject = chartData.datasets[1].data[index];
-                  const rebuttalAccept = chartData.datasets[2].data[index];
-                  const rebuttalReject = chartData.datasets[3].data[index];
-                  const total = nonRebuttalAccept + nonRebuttalReject + rebuttalAccept + rebuttalReject;
+                  // Use the actual paper count from the bin data
+                  const paperCount = chartData.paperCountData[index];
                   return (
                     <td key={label} className="text-center fw-bold">
-                      {total > 0 ? total : '-'}
+                      {paperCount > 0 ? paperCount : '-'}
                     </td>
                   );
                 })}
@@ -483,32 +486,13 @@ const RatingDistributionChart: React.FC<RatingDistributionChartProps> = ({
           <div className="fw-bold text-primary">{chartData.stats.totalPapers}</div>
           <div className="small text-muted">Total Papers</div>
         </div>
-        {rebuttalPredictionsMap && nonRebuttalPredictionsMap ? (
-          <>
-            <div className="text-center">
-              <div className="fw-bold text-success">{chartData.stats.totalNonRebuttalAccepts}/{chartData.stats.totalRebuttalAccepts}/{chartData.stats.totalTrueAccepts}</div>
-              <div className="small text-muted">Accept <br/>Non-Rebuttal Pred/ Rebuttal Pred/ Actual</div>
-            </div>
-            <div className="text-center">
-              <div className="fw-bold text-danger">{chartData.stats.totalNonRebuttalRejects}/{chartData.stats.totalRebuttalRejects}/{chartData.stats.totalTrueRejects}</div>
-              <div className="small text-muted">Reject <br/>Non-Rebuttal Pred/ Rebuttal Pred/ Actual</div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="text-center">
-              <div className="fw-bold text-success">{chartData.stats.totalAccepts}/{chartData.stats.totalTrueAccepts}</div>
-              <div className="small text-muted">Accept <br/>Prediction/ Decision</div>
-            </div>
-            <div className="text-center">
-              <div className="fw-bold text-danger">{chartData.stats.totalRejects}/{chartData.stats.totalTrueRejects}</div>
-              <div className="small text-muted">Reject <br/>Prediction/ Decision</div>
-            </div>
-          </>
-        )}
         <div className="text-center">
-          <div className="fw-bold text-info">{chartData.stats.avgField}</div>
-          <div className="small text-muted">Average {field}</div>
+          <div className="fw-bold text-success">{chartData.stats.totalTrueAccepts}</div>
+          <div className="small text-muted">Actual Accepted Papers</div>
+        </div>
+        <div className="text-center">
+          <div className="fw-bold text-danger">{chartData.stats.totalTrueRejects}</div>
+          <div className="small text-muted">Actual Rejected Papers</div>
         </div>
       </div>
     </div>

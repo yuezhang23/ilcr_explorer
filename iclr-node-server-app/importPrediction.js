@@ -135,7 +135,7 @@ async function main() {
                         decision: paper.decision.toLowerCase() === 'no' || paper.decision.toLowerCase() === 'reject' ? 'Reject' : 'Accept',
                     };
 
-                    // // Check for existing duplicate records
+                    // Check for existing duplicate records
                     try {
                         const existingRecords = await Prediction.find({
                             paper_id: doc.paper_id,
@@ -145,12 +145,8 @@ async function main() {
                         });
                         
                         if (existingRecords.length > 0) {
-                            console.log(`Removing ${existingRecords.length} existing duplicate record(s) for paper_id: ${doc.paper_id}, prompt: ${doc.prompt.substring(0, 50)}...`);
-                            await Prediction.deleteMany({
-                                paper_id: doc.paper_id,
-                                prompt: doc.prompt,
-                                model: doc.model
-                            });
+                            console.log(`Skipping duplicate record for paper_id: ${doc.paper_id}, prompt: ${doc.prompt.substring(0, 50)}... (${existingRecords.length} existing record(s) found)`);
+                            continue; // Skip this record and move to the next one
                         }
                     } catch (err) {
                         console.error(`Error checking for duplicates for paper_id ${doc.paper_id}:`, err.message);

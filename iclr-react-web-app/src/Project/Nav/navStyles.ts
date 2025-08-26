@@ -3,13 +3,17 @@ export const navStyles = {
     background: 'linear-gradient(135deg, rgb(100, 100, 180) 0%, rgb(90, 65, 140) 100%)',
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
     margin: '0 0 10px 0',
-    position: 'sticky' as const,
+    position: 'fixed' as const,
     top: 0,
-    zIndex: 1000,
+    left: 0,
+    right: 0,
+    zIndex: 9999,
     padding: '16px 24px',
-    border: '1px solid rgba(255, 255, 255, 0.2)'
-  },
-  logoContainer: {
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    width: '100%',
+        boxSizing: 'border-box' as const
+    },
+    logoContainer: {
     width: '50px',
     height: '50px',
     display: 'flex',
@@ -17,7 +21,7 @@ export const navStyles = {
     justifyContent: 'center',
     marginRight: '16px',
     backdropFilter: 'blur(10px)',
-    zIndex: 1001,
+    zIndex: 10000,
     position: 'relative' as const
   },
   title: {
@@ -161,23 +165,21 @@ export const navStyles = {
   dropdownMenu: {
     top: '100%',
     left: '0',
-    zIndex: 1001,
+    zIndex: 10001,
     width: '100px',
     minWidth: '100px'
   },
   yearDropdownMenu: {
     top: '100%',
     left: '0',
-    zIndex: 1000,
+    zIndex: 10001,
     width: '100px',
     minWidth: '100px'
   },
   collapseMenu: {
-    top: '100%',
+    top: 'calc(100% + 8px)',
     left: '0',
-    zIndex: 1001,
-    minWidth: 'fit-content',
-    maxWidth: '500px',
+    zIndex: 10001,
     width: 'auto',
     backgroundColor: '#fff',
     border: '1px solid #dee2e6',
@@ -186,7 +188,6 @@ export const navStyles = {
     padding: '4px 0',
     overflow: 'visible',
     position: 'absolute' as const,
-    marginTop: '4px',
     boxSizing: 'border-box' as const
   },
   collapseItem: {

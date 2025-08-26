@@ -536,7 +536,7 @@ function AdminHome() {
     const { currentIclrName } = useSelector((state: ProjectState) => state.iclrReducer);
     const { currentPreds } = useSelector((state: ProjectState) => state.predictionReducer);
     const dispatch = useDispatch();
-    const { currentYear } = useYear();
+    const { currentYear } = useYear() ;
 
     // Consolidated state management
     const [state, setState] = useState({
@@ -598,7 +598,7 @@ function AdminHome() {
             console.error('Error fetching paginated data:', error.response?.data || error);
             setState(prev => ({ ...prev, isLoadingData: false }));
         }
-    }, [state.currentPage, state.searchTerm, dispatch, currentYear]);
+    }, [state.currentPage, state.searchTerm, dispatch, useYear()]);
 
     // Optimized predictions fetching
     const fetchPredictionsForCurrentPage = useCallback(async (papers: any[], prompt: string, rebuttal: boolean) => {
@@ -794,7 +794,7 @@ function AdminHome() {
                                 setSearchTerm={setSearchTerm}
                             />
                         </div>
-                        <div className="flex-grow-1 d-flex flex-column" style={{ overflow: 'hidden' }}>
+                        <div className="d-flex flex-column" style={{ overflow: 'hidden' }}>
                             <div className="card border-0 shadow-lg flex-grow-1 d-flex flex-column" style={{ ...adminStyles.table.card, overflow: 'hidden' }}> 
                                 <div className="card-header" style={adminStyles.table.header}>
                                     <div className="row align-items-center text-center" style={adminStyles.table.headerRow}>
@@ -805,15 +805,29 @@ function AdminHome() {
                                         <div className='col-1 px-1'>Confidence</div>
                                         <div className='col-2'>Decision</div>
                                         <div className='col-2'>
-                                            <div className="d-flex flex-column align-items-center justify-content-center h-100">
-                                                <div className="mb-0">
+                                            <span className="d-flex flex-column align-items-center justify-content-center h-100">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <button 
+                                                        onClick={() => setState(prev => ({ ...prev, showPrompt: !prev.showPrompt }))}
+                                                        className="btn btn-bg rounded-pill text-white"
+                                                    >
+                                                        {state.showPrompt ? (
+                                                            <>
+                                                            <span><FaEyeSlash/></span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                            <span><FaEye /></span> 
+                                                            </>
+                                                        )}
+                                                    </button>
                                                     <PromptDropdown
                                                         selectedPrompt={state.currentPrompt}
                                                         onPromptChange={setCurrentPrompt}
                                                         isLoading={state.isLoadingPredictions}
                                                     />
                                                 </div>
-                                            </div>
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -823,20 +837,7 @@ function AdminHome() {
                                     borderBottomLeftRadius: '8px',
                                     borderBottomRightRadius: '8px'
                                 }}>
-                                    <button 
-                                    onClick={() => setState(prev => ({ ...prev, showPrompt: !prev.showPrompt }))}
-                                    className="btn btn-sm rounded-pill p-0 me-3 mb-3"
-                                    >
-                                    {state.showPrompt ? (
-                                        <>
-                                        <span><FaEyeSlash /></span>
-                                        </>
-                                    ) : (
-                                        <>
-                                        <span><FaEye /></span> 
-                                        </>
-                                    )}
-                                    </button>
+                    
                                     <RebuttalToggle
                                         checked={state.pub_rebuttal}
                                         onChange={setPubRebuttal}

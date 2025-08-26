@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { useYear } from '../../../contexts/YearContext';
 import { adminStyles } from '../styles/adminStyles';
+import { useYear } from '../../../contexts/YearContext';
 
 interface YearCheckboxProps {
     selectedYear: string;
@@ -80,7 +80,8 @@ const YearCheckbox: React.FC<YearCheckboxProps> = ({
                 <div className="card-header border-0 py-2" style={{
                     ...adminStyles.table.header,
                     fontSize: '0.9rem',
-                    padding: '8px 16px'
+                    padding: '8px 16px',
+                    position: 'static'
                 }}>
                     <div className="d-flex justify-content-between align-items-center">
                         <span> Year </span>

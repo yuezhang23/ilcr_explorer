@@ -1,0 +1,113 @@
+/* Custom scrollbar styles for PromptDropdown */
+.prompt-dropdown-container .dropdown-menu {
+  /* Ensure proper scrolling - use !important to override conflicting styles */
+  max-height: 300px !important;
+  height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  
+  /* Custom scrollbar for webkit browsers (Chrome, Safari, Edge) */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  
+  /* Smooth scrolling behavior */
+  scroll-behavior: smooth;
+  
+  /* White background */
+  background-color: white !important;
+}
+
+/* Specific styles for the prompt dropdown menu to ensure highest priority */
+.prompt-dropdown-menu {
+  max-height: 300px !important;
+  height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent !important;
+  scroll-behavior: smooth !important;
+  
+  /* White background */
+  background-color: white !important;
+}
+
+/* Override any Bootstrap CSS that might be interfering */
+.prompt-dropdown-container .dropdown-menu.show {
+  max-height: 300px !important;
+  height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background-color: white !important;
+}
+
+/* Force override Bootstrap dropdown styles */
+.prompt-dropdown-container .dropdown-menu.show.position-absolute {
+  max-height: 300px !important;
+  height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background-color: white !important;
+}
+
+/* Override Bootstrap's default dropdown behavior */
+.prompt-dropdown-container .dropdown-menu.show.position-absolute.prompt-dropdown-menu {
+  max-height: 300px !important;
+  height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: block !important;
+  background-color: white !important;
+}
+
+/* Maximum specificity using data attribute */
+.prompt-dropdown-container .dropdown-menu.show.position-absolute.prompt-dropdown-menu[data-testid="prompt-dropdown-menu"] {
+  max-height: 300px !important;
+  height: 300px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: block !important;
+  background-color: white !important;
+}
+
+/* Alternative approach using CSS custom properties */
+.prompt-dropdown-container {
+  --dropdown-max-height: 300px;
+}
+
+.prompt-dropdown-container .dropdown-menu {
+  max-height: var(--dropdown-max-height) !important;
+  height: var(--dropdown-max-height) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Webkit scrollbar styling */
+.prompt-dropdown-container .dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.prompt-dropdown-container .dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.prompt-dropdown-container .dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.prompt-dropdown-container .dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Ensure dropdown items don't wrap and maintain consistent height */
+.prompt-dropdown-container .dropdown-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 38px;
+  max-height: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+}

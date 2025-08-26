@@ -10,9 +10,11 @@ export const ratingStyles = {
     leftMenu: {
         overflow: 'visible',
         width: '450px',
-        height: 'fit-content',
+        height: '100%',
         position: 'relative',
-        zIndex: 1000
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column'
     } as CSSProperties,
     
     leftMenuHeader: {
@@ -25,7 +27,10 @@ export const ratingStyles = {
     } as CSSProperties,
     
     leftMenuBody: {
-        overflow: 'visible'
+        overflow: 'visible',
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column'
     } as CSSProperties,
     
     // Form control styles

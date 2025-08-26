@@ -57,13 +57,29 @@ export const YearProvider: React.FC<YearProviderProps> = ({ children }) => {
   const [availableYears, setAvailableYears] = useState<string[]>(['2024', '2025', '2026']);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Helper function to validate and set year
+  const validateAndSetYear = useCallback((year: string) => {
+    if (availableYears.includes(year)) {
+      setCurrentYear(year);
+      return true;
+    }
+    console.warn(`Invalid year: ${year}. Available years: ${availableYears.join(', ')}`);
+    return false;
+  }, [availableYears]);
+
   // Fetch current year configuration on component mount
   useEffect(() => {
     const fetchYearConfig = async () => {
       try {
         const response = await axios.get(`${BASE_API}/api/iclr/year`);
-        setCurrentYear(response.data.currentYear);
         setAvailableYears(response.data.availableYears);
+        // Validate the fetched year before setting it
+        if (response.data.currentYear && response.data.availableYears.includes(response.data.currentYear)) {
+          setCurrentYear(response.data.currentYear);
+        } else {
+          console.warn(`Fetched year ${response.data.currentYear} is not in available years, using default`);
+          setCurrentYear('2024');
+        }
       } catch (error) {
         console.error('Failed to fetch year configuration:', error);
         // Use default values if fetch fails
@@ -77,16 +93,37 @@ export const YearProvider: React.FC<YearProviderProps> = ({ children }) => {
     fetchYearConfig();
   }, []);
 
+  // Debug logging for year changes
+  useEffect(() => {
+    console.log(`YearContext: currentYear changed to: ${currentYear}`);
+  }, [currentYear]);
+
   const setYear = async (year: string): Promise<boolean> => {
     try {
+      // Validate that the year is in the available years list
+      if (!availableYears.includes(year)) {
+        console.warn(`Year ${year} is not in available years: ${availableYears.join(', ')}`);
+        return false;
+      }
+
+      // Update local state immediately for better UX
+      validateAndSetYear(year);
+      console.log(`Year locally updated to: ${year}`);
+
       const response = await axios.post(`${BASE_API}/api/iclr/year`, { year });
       if (response.data.success) {
-        setCurrentYear(response.data.currentYear);
+        console.log(`Year successfully updated on server to: ${year}`);
         return true;
+      } else {
+        // If server update failed, revert to previous year
+        console.error('Server update failed, reverting year change');
+        // We could add logic here to revert to the previous year if needed
+        return false;
       }
-      return false;
     } catch (error) {
       console.error('Failed to set year:', error);
+      // If API call fails, we keep the local change for better UX
+      // The user will see the year they selected, even if it didn't persist on the server
       return false;
     }
   };

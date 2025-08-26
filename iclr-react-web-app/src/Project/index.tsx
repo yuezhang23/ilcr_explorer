@@ -22,11 +22,12 @@ export default function Project() {
       <AuthProvider>
         <div className='d-flex flex-column' style={{ width: '100%', minHeight: '100vh' }}>
           <Nav />
-          <Routes>
+          <div className="main-content-wrapper" style={{ paddingTop: '90px' }}>
+            <Routes>
               <Route path="/" element={<Navigate to="Home" />} />
               <Route path="Home/*" element={<AdminHome/>} />
               <Route path="Analytics/MetricsDistribution/*" element={<RatingHome/>} />
-              <Route path="Analytics/DashboardComparison/*" element={<PredictionDashboard/>} />
+              <Route path="Analytics/Dashboard/*" element={<PredictionDashboard/>} />
               <Route path="Analytics/ConfusionMatrix/*" element={<ComprehensiveMetricsTable/>} />
               <Route path="Search" element={<Search />} />
               <Route path="User/Signin" element={<Signin />} />
@@ -38,7 +39,8 @@ export default function Project() {
               } />
               {/* <Route path="User/Owner/:ownerId/Claims" element={<Claims />} /> */}
               {/* <Route path="User/Admin/Review" element={<Reviews />} /> */}
-          </Routes>
+            </Routes>
+          </div>
         </div>
       </AuthProvider>
     </Provider>

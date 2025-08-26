@@ -1,7 +1,6 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Collapse } from "react-bootstrap";
 import { useAuth } from "../../contexts/AuthContext";
 import { useYear } from "../../contexts/YearContext";
 
@@ -20,7 +19,7 @@ function Nav() {
   const [selectedConference, setSelectedConference] = useState<string>('ICLR');
   
   const availableConferences = ['ICLR', 'NeurIPS', 'ICML', 'ACL'];
-  const availableForms = ['Confusion Matrix', 'Metrics Distribution', 'Dashboard Comparison'];
+  const availableForms = ['Confusion Matrix', 'Dashboard'];
 
   const handleSignout = () => {
     logout();
@@ -72,15 +71,15 @@ function Nav() {
 
   return (
     <div
-      className="d-flex justify-content-between align-items-center"
-      style={navStyles.container}
+      className="d-flex justify-content-between align-items-center nav-scroll-container"
+      style={{...navStyles.container, zIndex: 10000}}
     >
       <div className="d-flex align-items-center">
         <div style={navStyles.logoContainer}>
           <i className="fa fa-leaf" style={{ fontSize: '45px', color: 'white' }}><FaEarlybirds/></i>
         </div>
         <div>
-          <h4 style={navStyles.title}>Paper Review</h4>
+          <h4 style={navStyles.title}>ICLR Review</h4>
           <p style={navStyles.subtitle}>
             {isAuthenticated && user ? 
               (
@@ -96,36 +95,9 @@ function Nav() {
         </div>
       </div>
 
-      <div className="d-flex align-items-around" style={navStyles.headerControls}>
-        <div className={pathname.includes("Analytics") || pathname.includes("Dashboard") ? "d-none" : "d-flex align-items-center position-relative collapse-container"}>
-          <div className="me-2 position-relative">
-            <button 
-              className="btn dropdown-toggle" 
-              onClick={() => toggleCollapse('conference-collapse')}
-              style={navStyles.conferenceButton}
-            >
-              {selectedConference}
-            </button>
-            
-            <Collapse in={openCollapse === 'conference-collapse'}>
-              <div 
-                className="collapse-menu position-absolute"
-                style={navStyles.collapseMenu}
-              >
-                {availableConferences.map((conference: string) => (
-                  <button
-                    key={conference}
-                    className="collapse-item"
-                    onClick={() => handleConferenceSelect(conference)}
-                    style={selectedConference === conference ? navStyles.collapseItemActive : navStyles.collapseItem}
-                  >
-                    {conference}
-                  </button>
-                ))}
-              </div>
-            </Collapse>
-          </div>
-          <div className="me-3 position-relative">
+      <div className="d-flex align-items-around" style={{...navStyles.headerControls, position: 'relative', zIndex: 10001}}>
+        <div className={pathname.includes("Analytics") ? "d-none" : "d-flex position-relative collapse-container"}>
+          <div className="position-relative" style={{ zIndex: 10001, position: 'relative' }}>
             <button 
               className="btn dropdown-toggle" 
               onClick={() => toggleCollapse('year-collapse')}
@@ -134,10 +106,10 @@ function Nav() {
               {currentYear}
             </button>
             
-            <Collapse in={openCollapse === 'year-collapse'}>
+            {openCollapse === 'year-collapse' && (
               <div 
                 className="collapse-menu position-absolute"
-                style={navStyles.collapseMenu}
+                style={{...navStyles.collapseMenu, zIndex: 10001, position: 'absolute'}}
               >
                 {availableYears.map((year: string) => (
                   <button
@@ -150,11 +122,11 @@ function Nav() {
                   </button>
                 ))}
               </div>
-            </Collapse>
+            )}
           </div>
         
         </div>
-        <div className="me-2 position-relative">
+        <div className="mx-4 position-relative" style={{ zIndex: 10001, position: 'relative' }}>
             <button 
               className="btn dropdown-toggle" 
               onClick={() => toggleCollapse('analytics-collapse')}
@@ -163,16 +135,16 @@ function Nav() {
               Rebuttal Analytics
             </button>
             
-            <Collapse in={openCollapse === 'analytics-collapse'}>
+            {openCollapse === 'analytics-collapse' && (
               <div 
                 className="collapse-menu position-absolute"
-                style={navStyles.collapseMenu}
+                style={{...navStyles.collapseMenu, zIndex: 10001, position: 'absolute'}}
               > 
               {availableForms.map((form: string) => (
                 <Link
                   key={form}
                   to={`/Analytics/${form.replace(' ', '')}`}
-                  className="collapse-item"
+                  className="collapse-item mx-3"
                   data-path={`Analytics/${form}`}
                   style={{
                     ...navStyles.collapseItem,
@@ -186,12 +158,19 @@ function Nav() {
                 </Link>
               ))}
               </div>
-            </Collapse>
+            )}
           </div>
-        
+        <Link
+          to="/Analytics/MetricsDistribution"
+          className="btn mx-2"
+          data-path="Metrics"
+          style={pathname.includes("Metrics") ? navStyles.navLinkActive : navStyles.navLink}
+        >
+          Metrics
+        </Link>
         <Link
           to="/Home"
-          className="btn"
+          className="btn mx-2"
           data-path="Home"
           style={pathname.includes("Home") ? navStyles.navLinkActive : navStyles.navLink}
         >
