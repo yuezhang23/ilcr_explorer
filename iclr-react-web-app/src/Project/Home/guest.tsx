@@ -2,11 +2,11 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { ProjectState } from '../store';
 import * as home from './home';
-import * as util from './utility';
+
 import axios from "axios";
 import { FaChevronDown, FaChevronUp, FaEye, FaEyeSlash } from 'react-icons/fa6';
 import { setIclr, setIclrName } from '../Reducers/iclrReducer';
-import { updatePrediction, setCurrentPreds } from '../Reducers/predictionReducer';
+import { setCurrentPreds } from '../Reducers/predictionReducer';
 import { useYear } from '../../contexts/YearContext';
 import { 
     adminStyles, 
@@ -20,8 +20,7 @@ import {
 import './styles/admin.css';
 import PromptDropdown from './components/PromptDropdown';
 import RebuttalToggle from './components/RebuttalToggle';
-import PromptInputModal from './components/PromptInputModal';
-import ConfirmationModal from './components/ConfirmationModal';
+import Prompting from './components/Prompting';
 
 axios.defaults.withCredentials = true;
 
@@ -716,22 +715,6 @@ function GuestHome({ initialSearchTerm = '' }: { initialSearchTerm?: string }) {
     }, [state.bib, state.currentPrompt, state.pub_rebuttal, fetchPredictionsForCurrentPage]);
 
     // Optimized event handlers
-    const handlePrompting = useCallback(async (url: string, id: string, rebuttal: number) => {
-        const promptToUse = state.userPrompt || home.BASIC_PROMPT;
-        try {
-            const response = await home.promptSubmissionByUrl(url, state.confirmationPrompt, rebuttal);
-            const prediction = response.toLowerCase() === 'yes' || response.toLowerCase() === 'accept' ? "Accept" : "Reject";
-            dispatch(updatePrediction({ paper_id: id, prompt: promptToUse, prediction }));
-            setState(prev => ({
-                ...prev,
-                openModalPaper: null,
-                showConfirmationModal: false,
-                user_rebuttal: false
-            }));
-        } catch (error) {
-            console.error(error);
-        }
-    }, [state.userPrompt, state.confirmationPrompt, dispatch]);
 
     const goToNextPage = useCallback(() => {
         if (state.currentPage < totalPages) {
@@ -964,36 +947,7 @@ function GuestHome({ initialSearchTerm = '' }: { initialSearchTerm?: string }) {
                 </div>
             </div>
 
-            <PromptInputModal
-                openModalPaper={state.openModalPaper}
-                userPrompt={state.userPrompt}
-                setUserPrompt={setUserPrompt}
-                currentPrompt={state.currentPrompt}
-                setOpenModalPaper={setOpenModalPaper}
-                onConfirm={() => {
-                    if (state.openModalPaper) {    
-                        const promptToUse = state.userPrompt || state.currentPrompt;
-                        setUserPrompt(promptToUse);
-                        setConfirmationPrompt(util.prompt_tmp.replace("{{ task }}", promptToUse));
-                        setShowConfirmationModal(true);
-                    }
-                }}
-            />
-
-            <ConfirmationModal
-                showConfirmationModal={state.showConfirmationModal}
-                openModalPaper={state.openModalPaper}
-                confirmationPrompt={state.confirmationPrompt}
-                setConfirmationPrompt={setConfirmationPrompt}
-                user_rebuttal={state.user_rebuttal}
-                setUserRebuttal={setUserRebuttal}
-                setShowConfirmationModal={setShowConfirmationModal}
-                onConfirm={() => {
-                    if (state.openModalPaper) {    
-                        handlePrompting(state.openModalPaper.url, state.openModalPaper._id, state.user_rebuttal ? 1 : 0);
-                    }
-                }}
-            />
+            <Prompting />
         </div>
     );
 }

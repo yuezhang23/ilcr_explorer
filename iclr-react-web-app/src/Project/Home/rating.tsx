@@ -381,7 +381,7 @@ function RatingHome() {
                                 <h6 className="mb-0">
                                     {showPredictionErrors ? 'Prediction Analysis' : 'Prediction Distribution'}
                                 </h6>
-                                {/* <button
+                                <button
                                     className="btn btn-sm"
                                     onClick={() => setShowPredictionErrors(!showPredictionErrors)}
                                     disabled={isLoadingPredictions}
@@ -398,8 +398,8 @@ function RatingHome() {
                                     }}
                                 >
                                     <i className={`fas ${showPredictionErrors ? 'fa-chart-bar' : 'fa-exclamation-triangle'} me-1`}></i>
-                                    {showPredictionErrors ? 'Distribution' : 'Mismatch'}
-                                </button> */}
+                                    {showPredictionErrors ? 'Distribution' : 'Prediction Mismatch'}
+                                </button>
                             </div>
                         </div>
                         <div className="card-body p-4" style={{maxHeight: '70vh', overflowY: 'auto'}}>

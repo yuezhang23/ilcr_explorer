@@ -155,8 +155,7 @@ function Nav() {
               style={navStyles.conferenceButton}
             >
               Rebuttal Analytics
-            </button>
-            
+            </button>            
             {openCollapse === 'analytics-collapse' && (
               <div 
                 className="collapse-menu position-absolute"
@@ -182,6 +181,14 @@ function Nav() {
               </div>
             )}
           </div>
+          {/* <Link
+          to="/Analytics/playground"
+          className="btn mx-2"
+          data-path="Prompting"
+          style={pathname.includes("Prompting") ? navStyles.navLinkActive : navStyles.navLink}
+        >
+          Prompting
+        </Link> */}
         <Link
           to="/Analytics/MetricsDistribution"
           className="btn mx-2"

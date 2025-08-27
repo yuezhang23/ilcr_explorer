@@ -88,13 +88,13 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                 }}
                 className="form-select form-select-sm"
                 style={{
-                  fontSize: '0.875rem',
+                  fontSize: '1.0rem',
                   padding: '6px 12px',
                   borderRadius: '12px',
                   border: '1px solid #667eea',
                   backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   color: 'white',
-                  minWidth: '80px'
+                  minWidth: '100px'
                 }}
               >
                 {availableYears.map(year => (
@@ -114,8 +114,8 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
               }}
               className="btn btn-sm btn-outline-primary"
               style={{
-                fontSize: '0.875rem',
-                padding: '6px 16px',
+                fontSize: '1.0rem',
+                padding: '8px 18px',
                 borderRadius: '20px',
                 border: '1px solid #667eea',
                 color: 'white',
@@ -178,12 +178,14 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                 <th scope="col" rowSpan={2} className="text-center align-middle" style={{ 
                   borderColor: '#e5e7eb',
                   color: '#374151',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  width: '100px'
                 }}>Prompt</th>
                 <th scope="col" rowSpan={2} className="text-center align-middle" style={{ 
                   borderColor: '#e5e7eb',
                   color: '#374151',
-                  fontWeight: '600'
+                  fontWeight: '600',
+                  width: '180px'
                 }}>Prompt Type</th>
                 <th scope="col" rowSpan={2} className="text-center align-middle" style={{ 
                   borderColor: '#e5e7eb',
@@ -266,8 +268,15 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                       <div className="d-flex flex-column align-items-center">
 
                           {home.PROMPT_CANDIDATES.indexOf(promptMetrics.prompt) >= 0 ? home.PROMPT_CANDIDATES.indexOf(promptMetrics.prompt) + 1 : home.PROMPT_CANDIDATES.length} 
-
-                        <button 
+                      </div>
+                    </td>
+                    <td rowSpan={expandedPrompts.has(index) ? 3 : 2} className="text-center align-middle" style={{ 
+                      borderColor: '#e5e7eb',
+                      color: promptMetrics.type === -1 ? '#374151' : 
+                             promptMetrics.type === 1 ? '#d97706' : '#059669'
+                    }}>{promptMetrics.type === -1 ? "Initial" : promptMetrics.type === 1 ? "APO - Rebuttal" : "APO - Non-Rebuttal"}
+                    <br/>
+                    <button 
                           onClick={() => togglePrompt(index)}
                           className="btn btn-sm rounded-pill"
                           style={{
@@ -289,13 +298,7 @@ const ComprehensiveMetricsTable: React.FC<ComprehensiveMetricsTableProps> = () =
                             </>
                           )}
                         </button>
-                      </div>
                     </td>
-                    <td rowSpan={expandedPrompts.has(index) ? 3 : 2} className="text-center align-middle" style={{ 
-                      borderColor: '#e5e7eb',
-                      color: promptMetrics.type === -1 ? '#374151' : 
-                             promptMetrics.type === 1 ? '#d97706' : '#059669'
-                    }}>{promptMetrics.type === -1 ? "Initial" : promptMetrics.type === 1 ? "APO - Rebuttal" : "APO - Non-Rebuttal"}</td>
                     <td className="text-center fw-bold" style={{ 
                       borderColor: '#e5e7eb',
                       color: '#059669' // Green color for non-rebuttal

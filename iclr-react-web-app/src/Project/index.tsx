@@ -15,6 +15,7 @@ import RatingHome from './Home/rating';
 import PredictionDashboard from './Home/components/PredictionDashboard';
 import ComprehensiveMetricsTable from './Home/components/ComprehensiveMetricsTable';
 import AdminHome from './Home/index';
+import Prompting from './Home/components/Prompting';
 
 export default function Project() {
   return (
@@ -29,6 +30,7 @@ export default function Project() {
               <Route path="Analytics/MetricsDistribution/*" element={<RatingHome/>} />
               <Route path="Analytics/Dashboard/*" element={<PredictionDashboard/>} />
               <Route path="Analytics/ConfusionMatrix/*" element={<ComprehensiveMetricsTable/>} />
+              <Route path="Analytics/playground/*" element={<Prompting/>} />
               <Route path="Search" element={<Search />} />
               <Route path="User/Signin" element={<Signin />} />
               <Route path="User/Signup" element={<Signup />} />

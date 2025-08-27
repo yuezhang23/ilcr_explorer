@@ -47,6 +47,8 @@ const artisticTextStyle = {
 };
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ currentYear, onPaperClick }) => {
+    console.log('Leaderboard component loaded with props:', { currentYear, onPaperClick });
+    
     const [topPapers, setTopPapers] = useState<Paper[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -70,10 +72,19 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentYear, onPaperClick }) 
     }, []);
 
     const fetchTopPapers = useCallback(async () => {
+        if (!currentYear) {
+            console.log(`Leaderboard: Skipping fetch - no year provided`);
+            return;
+        }
+        
+        console.log(`Leaderboard: fetchTopPapers called for year: ${currentYear}`);
         setIsLoading(true);
         setError(null);
+        
         try {
+            console.log(`Fetching top papers for year: ${currentYear}`);
             const papers = await home.getPapersRankedByRating(20);
+            console.log(`Received ${papers.length} papers for year ${currentYear}`);
             setTopPapers(papers);
         } catch (err: any) {
             console.error('Error fetching top papers:', err);
@@ -84,8 +95,21 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentYear, onPaperClick }) 
     }, [currentYear]);
 
     useEffect(() => {
-        fetchTopPapers();
-    }, [fetchTopPapers]);
+        if (!currentYear) {
+            console.log(`Leaderboard: Skipping effect - no year provided`);
+            return;
+        }
+        
+        console.log(`Leaderboard: Year changed to: ${currentYear}, fetching new data...`);
+        // Clear existing data immediately when year changes for instant visual feedback
+        setTopPapers([]);
+        // Fetch immediately for fastest response, but with a small delay to prevent UI flicker
+        const timer = setTimeout(() => {
+            fetchTopPapers();
+        }, 10);
+        
+        return () => clearTimeout(timer);
+    }, [currentYear, fetchTopPapers]);
 
     const handlePaperClick = useCallback((paperTitle: string, e: React.MouseEvent) => {
         e.preventDefault();
@@ -147,7 +171,9 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentYear, onPaperClick }) 
                         <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
                             <span className="visually-hidden">Loading...</span>
                         </div>
-                        <p className="mt-3 text-muted fw-light">Loading leaderboard...</p>
+                        <p className="mt-3 text-muted fw-light">
+                            Loading leaderboard...
+                        </p>
                     </div>
                 </div>
             </div>
@@ -199,6 +225,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentYear, onPaperClick }) 
                 <h5 className="mb-0 d-flex align-items-center">
                     <FaTrophy className="me-3" style={{ fontSize: '2.5rem', transform: 'rotate(-15deg)', color: '#FFD700' }} />
                     <span style={artisticTextStyle}>Top Ratings</span>
+                    {isLoading && (
+                        <span className="ms-2 badge bg-info text-white" style={{ fontSize: '0.7rem' }}>
+                            Loading...
+                        </span>
+                    )}
                 </h5>
             </div>
             <div className="card-body p-0" style={{ overflow: 'auto', maxHeight: 'calc(800px - 85px)' }}>
@@ -221,7 +252,6 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentYear, onPaperClick }) 
                                     position: 'relative',
                                     minHeight: 'fit-content'
                                 }}
-            
                             >
                                 <div className="d-flex flex-column">
                                     <div className="mb-2">
@@ -275,4 +305,4 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentYear, onPaperClick }) 
     );
 };
 
-export default Leaderboard; 
+export default Leaderboard;
