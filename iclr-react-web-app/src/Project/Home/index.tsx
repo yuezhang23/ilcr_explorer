@@ -42,6 +42,7 @@ function Home() {
                 <div className='col-2 d-none d-lg-block me-3 d-flex flex-column'>
                     <div className='d-flex mb-3 mt-3' style={{ minHeight: '45px' }}> </div>
                     <Leaderboard 
+                        key={currentYear} // Force re-render when year changes
                         currentYear={currentYear} 
                         onPaperClick={handleLeaderboardSearch} 
                     />

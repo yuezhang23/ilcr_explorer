@@ -443,7 +443,7 @@ const PaperRow = React.memo(({
                     </div>
                     {isAbstractExpanded && (
                         <div 
-                            className="mt-3 p-4 rounded-3"
+                            className="mt-3 p-2 rounded-3"
                             style={adminStyles.abstract.container}
                         >
                             {paper.abstract}
@@ -915,25 +915,31 @@ function GuestHome({ initialSearchTerm = '' }: { initialSearchTerm?: string }) {
                                         </div>
                                     )}
                                     {(state.isLoadingData || yearLoading || state.isYearChanging) && (
-                                        <div className="text-center py-5" style={adminStyles.loadingState.container}>
-                                            <div className="spinner-border text-primary" role="status">
-                                                <span className="visually-hidden">Loading...</span>
+                                        <div className="row align-items-center text-center my-4">
+                                            <div className="col-12 text-center py-5" style={adminStyles.loadingState.container}>
+                                                <div className="spinner-border text-primary" role="status">
+                                                    <span className="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p>{state.isYearChanging ? 'Changing year...' : yearLoading ? 'Loading year...' : 'Loading papers...'}</p>
                                             </div>
-                                            <p>{state.isYearChanging ? 'Changing year...' : yearLoading ? 'Loading year...' : 'Loading papers...'}</p>
                                         </div>
                                     )}
                                     {!state.isLoadingData && processedBib.length === 0 && state.searchTerm && (
-                                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
-                                            <i className="fas fa-search" style={adminStyles.emptyState.icon}></i>
-                                            <h5>No papers found</h5>
-                                            <p>No papers match "{state.searchTerm}"</p>
+                                        <div className="row align-items-center text-center my-4">
+                                            <div className="col-12 text-center py-5" style={adminStyles.emptyState.container}>
+                                                <i className="fas fa-search" style={adminStyles.emptyState.icon}></i>
+                                                <h5>No papers found</h5>
+                                                <p>No papers match "{state.searchTerm}"</p>
+                                            </div>
                                         </div>
                                     )}
                                     {!state.isLoadingData && processedBib.length === 0 && !state.searchTerm && (
-                                        <div className="text-center py-5" style={adminStyles.emptyState.container}>
-                                            <i className="fas fa-inbox" style={adminStyles.emptyState.icon}></i>
-                                            <h5>No papers available</h5>
-                                            <p>There are no papers to display</p>
+                                        <div className="row align-items-center text-center my-4">
+                                            <div className="col-12 text-center py-5" style={adminStyles.emptyState.container}>
+                                                <i className="fas fa-inbox" style={adminStyles.emptyState.icon}></i>
+                                                <h5>No papers available</h5>
+                                                <p>There are no papers to display</p>
+                                            </div>
                                         </div>
                                     )}
                                     {!state.isLoadingData && processedBib.length > 0 && processedBib.map((br: any, index: number) => 

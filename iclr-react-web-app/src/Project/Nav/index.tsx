@@ -49,17 +49,23 @@ function Nav() {
 
     // Handle year selection change
     const handleYearSelect = useCallback(async (year: string) => {
-      // Update global year context
-      try {
-          setIsYearChanging(true);
-          await setYear(year);
-          setOpenCollapse(null);
-      } catch (error) {
-          console.error('Failed to update global year:', error);
-      } finally {
-          setIsYearChanging(false);
-      }
-  }, [setYear]);
+        // Update global year context
+        try {
+            setIsYearChanging(true);
+            // Close the dropdown immediately for better UX
+            setOpenCollapse(null);
+            
+            // Update the year context
+            const success = await setYear(year);
+            if (!success) {
+                console.warn('Year update may not have been successful');
+            }
+        } catch (error) {
+            console.error('Failed to update global year:', error);
+        } finally {
+            setIsYearChanging(false);
+        }
+    }, [setYear]);
 
   const handleConferenceSelect = useCallback((conference: string) => {
     setSelectedConference(conference);

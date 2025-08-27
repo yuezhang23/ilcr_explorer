@@ -240,8 +240,8 @@ export const adminStyles = {
       fontSize: '0.9rem',
       lineHeight: '1.6',
       maxHeight: '200px',
-      maxWidth: '600px', // Increased width for better readability
-      minWidth: '400px', // Minimum width to ensure good layout
+      maxWidth: '500px', // Reduced width for more compact display
+      minWidth: '300px', // Reduced minimum width
       overflowY: 'auto' as const,
       color: '#4b5563'
     }

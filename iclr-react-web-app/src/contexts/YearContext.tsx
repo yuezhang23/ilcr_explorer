@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import axios from 'axios';
 
 interface YearContextType {
@@ -106,24 +107,36 @@ export const YearProvider: React.FC<YearProviderProps> = ({ children }) => {
         return false;
       }
 
-      // Update local state immediately for better UX
-      validateAndSetYear(year);
-      console.log(`Year locally updated to: ${year}`);
-
+      // Update local state immediately for better UX using flushSync
+      flushSync(() => {
+        setCurrentYear(prevYear => {
+          if (prevYear !== year) {
+            console.log(`Year locally updated from ${prevYear} to: ${year}`);
+            return year;
+          }
+          return prevYear;
+        });
+        
+        // Force a re-render by updating loading state temporarily
+        setLoading(true);
+      });
+      
       const response = await axios.post(`${BASE_API}/api/iclr/year`, { year });
       if (response.data.success) {
         console.log(`Year successfully updated on server to: ${year}`);
+        setLoading(false);
         return true;
       } else {
         // If server update failed, revert to previous year
         console.error('Server update failed, reverting year change');
-        // We could add logic here to revert to the previous year if needed
+        setLoading(false);
         return false;
       }
     } catch (error) {
       console.error('Failed to set year:', error);
       // If API call fails, we keep the local change for better UX
       // The user will see the year they selected, even if it didn't persist on the server
+      setLoading(false);
       return false;
     }
   };
