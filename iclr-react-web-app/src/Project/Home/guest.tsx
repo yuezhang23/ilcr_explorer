@@ -895,7 +895,8 @@ function GuestHome({ initialSearchTerm = '' }: { initialSearchTerm?: string }) {
                                 </div>
                                 <div className="card-body p-0 flex-grow-1" style={{ ...adminStyles.table.body, overflow: 'auto' }}>
                                 {state.showPrompt && (
-                                        <div><b>Current Prompt:</b> {home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 0 ? "Basic" : home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 1 ? "Latest" : "Custom"}
+                                        <div><b>Prompt Type:</b> {home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 0 ? "APO- Non-Rebuttal" : home.PROMPT_TYPES[home.PROMPT_TYPES.findIndex(p => p.prompt === state.currentPrompt)].type === 1 ? "APO- Rebuttal" : "Initial"}
+                                        <br></br><b>Content:</b>
                                         <tr style={{ 
                                         backgroundColor: '#f8fafc',
                                         borderColor: '#e5e7eb'
