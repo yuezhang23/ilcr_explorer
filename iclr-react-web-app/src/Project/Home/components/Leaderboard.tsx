@@ -15,7 +15,6 @@ interface LeaderboardProps {
     onPaperClick?: (paperTitle: string) => void;
 }
 
-// Artistic header styles with gradient and text effects
 const leaderboardHeaderStyle = {
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     color: 'white',
